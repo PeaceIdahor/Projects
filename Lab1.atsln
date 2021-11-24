@@ -1,22 +1,39 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Atmel Studio Solution File, Format Version 11.00
-VisualStudioVersion = 14.0.23107.0
-MinimumVisualStudioVersion = 10.0.40219.1
-Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Lab1", "Lab1\Lab1.cproj", "{DCE6C7E3-EE26-4D79-826B-08594B9AD897}"
-EndProject
-Global
-	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|AVR = Debug|AVR
-		Release|AVR = Release|AVR
-	EndGlobalSection
-	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{DCE6C7E3-EE26-4D79-826B-08594B9AD897}.Debug|AVR.ActiveCfg = Debug|AVR
-		{DCE6C7E3-EE26-4D79-826B-08594B9AD897}.Debug|AVR.Build.0 = Debug|AVR
-		{DCE6C7E3-EE26-4D79-826B-08594B9AD897}.Release|AVR.ActiveCfg = Release|AVR
-		{DCE6C7E3-EE26-4D79-826B-08594B9AD897}.Release|AVR.Build.0 = Release|AVR
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
-	EndGlobalSection
-EndGlobal
+/*
+* LAB 1 
+* Created: 2/20/21 8:35 PM
+* Author : Peace Idahor
+*/
+#define F_CPU 16000000UL
+#include <avr/io.h>
+#include <util/delay.h>
+#define REDLED 0 //PB0
+#define GREENLED 1 //PB1
+#define REDSWITCH 0 //PD0
+#define GREENSWITCH 1 //PD1
+#define RnGSWITCH 2 //PD2
+void blinker(unsigned char);
+
+int main(void) {
+	DDRB = (1 << REDLED) | (1 << GREENLED);
+	DDRB |= (1 << 5);
+	PORTD = (1 << REDSWITCH) | (1 << GREENSWITCH) | (1 << RnGSWITCH);
+	while (1) {
+		if ((PIND & (1 << REDSWITCH)) == 0) {
+			blinker(REDLED);
+			} else if ((PIND & (1 << GREENSWITCH)) == 0) {
+			blinker(GREENLED);
+			} else if ((PIND & (1 << RnGSWITCH)) == 0) {
+			blinker(GREENLED);
+			blinker(REDLED);
+			} else {
+			blinker(5);
+		}
+	}
+}
+void blinker(unsigned char ledPin){
+	PORTB |= (1 << ledPin);
+	_delay_ms(100);
+	PORTB &= ~(1 <<ledPin);
+	_delay_ms(100);
+	return;
+}
