@@ -107,6 +107,7 @@ for index,command in enumerate(wordArrsave):
 				graph.add_edge(pydot.Edge(f"orGate{count2}",f"{subArr[1]}", color="black", style=SOLID))
 			else:
 				bufferArr.append(subArr[1])
+				inputArr.append(subArr[1])
 				buffer(subArr[1])
 				graph.add_edge(pydot.Edge(f"orGate{count2}",f"buffer{subArr[1]}", color="black", style=SOLID))
 			for item in subArr:
@@ -122,9 +123,11 @@ for index,command in enumerate(wordArrsave):
 			andGate(count2)
 			if subArr[1] in outputArr:
 				output(subArr[1])
+				
 				graph.add_edge(pydot.Edge(f"andGate{count2}",f"{subArr[1]}", color="black", style=SOLID))
 			else:
 				bufferArr.append(subArr[1])
+				inputArr.append(subArr[1])
 				buffer(subArr[1])
 				graph.add_edge(pydot.Edge(f"andGate{count2}",f"buffer{subArr[1]}", color="black", style=SOLID))
 			for item in subArr:
@@ -143,6 +146,7 @@ for index,command in enumerate(wordArrsave):
 				graph.add_edge(pydot.Edge(f"xorGate{count2}",f"{subArr[1]}", color="black", style=SOLID))
 			else:
 				bufferArr.append(subArr[1])
+				inputArr.append(subArr[1])
 				buffer(subArr[1])
 				graph.add_edge(pydot.Edge(f"xorGate{count2}",f"buffer{subArr[1]}", color="black", style=SOLID))
 			for item in subArr:
@@ -161,6 +165,7 @@ for index,command in enumerate(wordArrsave):
 				graph.add_edge(pydot.Edge(f"notGate{count2}",f"{subArr[1]}", color="black", style=SOLID))
 			else:
 				bufferArr.append(subArr[1])
+				inputArr.append(subArr[1])
 				buffer(subArr[1])
 				graph.add_edge(pydot.Edge(f"notGate{count2}",f"buffer{subArr[1]}", color="black", style=SOLID))
 			for item in subArr:
@@ -179,6 +184,7 @@ for index,command in enumerate(wordArrsave):
 				graph.add_edge(pydot.Edge(f"norGate{count2}",f"{subArr[1]}", color="black", style=SOLID))
 			else:
 				bufferArr.append(subArr[1])
+				inputArr.append(subArr[1])
 				buffer(subArr[1])
 				graph.add_edge(pydot.Edge(f"norGate{count2}",f"buffer{subArr[1]}", color="black", style=SOLID))
 			for item in subArr:
@@ -197,6 +203,7 @@ for index,command in enumerate(wordArrsave):
 				graph.add_edge(pydot.Edge(f"xnorGate{count2}",f"{subArr[1]}", color="black", style=SOLID))
 			else:
 				bufferArr.append(subArr[1])
+				inputArr.append(subArr[1])
 				buffer(subArr[1])
 				graph.add_edge(pydot.Edge(f"xnorGate{count2}",f"buffer{subArr[1]}", color="black", style=SOLID))
 			for item in subArr:
@@ -213,10 +220,33 @@ for index,command in enumerate(wordArrsave):
 			if subArr[1] in outputArr:
 				output(count2)
 				graph.add_edge(pydot.Edge(f"{item}",f"output{count2}", color="black",label=subArr[1], style=SOLID))
-		
+#-----------------------------------Checking to see if I get a wire and also account for a wire array of multiple wires ---------------------------------------------------------------------------
 	if command == "wire":
-		print(wordArrsave[index+1])
-		inputArr.append(wordArrsave[index+1])
-
+		subArray2 = []
+		index2 = index +1
+		while wordArrsave[index2] !=";":
+			subArray2.append(wordArrsave[index2])
+			index2 +=1
+		for items in subArray2:
+			if len(items)>1:
+				for index2,item in enumerate(items):
+					if item =="[":
+						varName = items[index2-1]
+						wiresA = []
+						index3 = index2+1
+						while items[index3] != "]":
+							wiresA.append(items[index3])
+							index3 +=1
+						wires = int(''.join(wiresA))
+					else:
+						continue
+				while wires>=0:
+					inputArr.append(f"{varName}[{wires}]")
+					wires -=1
+			else:
+				inputArr.append(wordArrsave[index+1])
+print(inputArr)
+print(bufferArr)
+print(outputArr)
 
 graph.write_png("output.png")
