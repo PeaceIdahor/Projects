@@ -41,6 +41,20 @@ fDot.write("digraph test{\n")
 called=0
 
 #this is my function for writing two nodes connected by an edge to the dot file
+def setup():
+	fDot.write('splines="ortho"\n')
+	fDot.write('subgraph inputs{ rank="same"')
+	for item in inputD:
+		if item not in bufferD:
+			fDot.write(f" {item} ")
+	fDot.write('}\n')
+
+	fDot.write('subgraph outputs{rank="same"')
+	for item in outputD:
+		if item not in bufferD:
+			fDot.write(f" {item} ")
+	fDot.write('}\n')
+
 def writeNode(inN,shape):
 	fDot.write(f'"{inN}" [shape={shape}]\n')
 
@@ -77,7 +91,6 @@ def getValue(operationin,rightSide,outputN):
 	writeNode(operationin,"square")
 	for item in rightSide:
 		if item in inputD and item not in bufferD:
-			item = item + f"_{inputD[item]}"
 			writeNode(item,"invtriangle")
 			writeEdgeNode(item,operationin)
 		if item in inputD and item in bufferD:
@@ -132,7 +145,7 @@ for index,word in enumerate(wordArrsave):
 				else:
 					inputD[item] = indexMaster
 
-
+setup()
 for index,word in enumerate(wordArrsave):
 	indexMaster = index
 	if word =="//": #checking to see if part of the code was commented 
@@ -161,6 +174,4 @@ print(outputD)
 #print(inputArr)
 #print(bufferArr)
 #print(outputArr)
-
-
 
