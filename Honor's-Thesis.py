@@ -1,4 +1,7 @@
 
+from tkinter.tix import InputOnly
+
+
 f = open("verilogTest2.v")
 wordArr = [] #an array of characters that appear in sequence
 wordArrsave = []
@@ -45,7 +48,7 @@ def writeEdgeNode(inN,outN="",label=""):
 	if label == "":
 		fDot.write(f'"{inN}" -> "{outN}" \n')
 	else:
-		fDot.write(f'"{inN}" -> "{outN}" Label={label}\n')
+		fDot.write(f'"{inN}" -> "{outN}" [label="{label}"]\n')
 def createSubgraph(input):
 	fDot.write("subgraph{\nrand=same;")
 	for item in input:
@@ -60,6 +63,7 @@ inputArr = []
 outputD = {}
 bufferD = {}
 inputD = {}
+operations = []
 #trying to get the amounts of outputs defined in the v file
 count1=0
 
@@ -67,38 +71,9 @@ count1=0
 in this functiono I am geting the right and leftside of the inputs 
 Then I am writing each input to the dot file 
 """
-"""
-def getValue(operationin,rightSide,outputN):
-	rightside2 = []
-	leftside2 = []
-	index = 0
-	operation = operationin+f"_{count}"
-	outputD.append(outputN)
-	while inputs[index]!=operationin:
-		rightside2.append(inputs[index])
-		index +=1
-	index2 = index + 1
-	while inputs[index2] !=";":
-		leftside2.append(inputs[index2])
-		#inputArr.append(inputs[index2])
-		index2 +=1
-	writeNode(operation,"square")
-	for item in rightside2:
-		if item not in outputD:
-			writeNode(item,"invtriangle")
-			writeEdgeNode(item,operation)
-	for item in leftside2:
-		if item not in outputD:
-			writeNode(item, "invtriangle")
-			writeEdgeNode(item,operation)
-	if count == count1:
-		writeNode(outputN,"triangle")
-		writeEdgeNode(operation,outputN)
-"""
-
 def getValue(operationin,rightSide,outputN):
 	operationin = operationin + f"_{outputD[outputN]}"
-	outputN = outputN + f"_{outputD[outputN]}"
+	#outputN = outputN + f"_{outputD[outputN]}"
 	writeNode(operationin,"square")
 	for item in rightSide:
 		if item in inputD and item not in bufferD:
@@ -106,15 +81,19 @@ def getValue(operationin,rightSide,outputN):
 			writeNode(item,"invtriangle")
 			writeEdgeNode(item,operationin)
 		if item in inputD and item in bufferD:
-			item = item + f"_{outputD[item]}"
-			writeEdgeNode(item,operationin)
-	writeNode(outputN,"triangle")
-	print(operationin)
-	print(outputN)
+			index = outputD[item] 
+			for item2 in operations:
+				if item2[1] == index:
+					operationin2 = item2[0] + f"_{index}"
+					writeEdgeNode(operationin2,operationin,item)
+				else:
+					continue
 	#check to see if the outputN is in the buffer dict before creating an edge to that node
 	#then connect the edge to the output of that buffer node and not the buffer itself
 	#make the buffer name the label of the edge from the current node to the actual output node
-	writeEdgeNode(operationin,outputN)
+	if outputN not in bufferD:
+		writeNode(outputN,"triangle")
+		writeEdgeNode(operationin,outputN)
 
 """
 In this section I am going through my words array and checking for assign statements
@@ -140,6 +119,7 @@ for index,word in enumerate(wordArrsave):
 		rightSide.append(";")
 	for index,item in enumerate(rightSide):
 		if item == "&": 
+			operations.append(["&",indexMaster])
 			count+=1
 			index2 = rightSide.index("&")
 			rightSide.pop(index2)
@@ -151,16 +131,36 @@ for index,word in enumerate(wordArrsave):
 					bufferD[item] = indexMaster
 				else:
 					inputD[item] = indexMaster
+
+
+for index,word in enumerate(wordArrsave):
+	indexMaster = index
+	if word =="//": #checking to see if part of the code was commented 
+		while wordArrsave[index] !=";":
+			wordArrsave.pop(index)
+	rightSide=[]
+	if word == "assign":
+		outputN = wordArrsave[index+1]
+		index2=index+3
+		while wordArrsave[index2] != ";":
+			rightSide.append(wordArrsave[index2])
+			index2 +=1
+		rightSide.append(";")
+	for index,item in enumerate(rightSide):
+		if item == "&": 
 			getValue("&",rightSide,outputN)
-			#getValue("~",rightSide,outputN,count)
 	if word =="endmodule":
 		fDot.write("}")
+
 #trying to figure out how to iterate through the dictionary and call the get value fuction with the items in the dictionary after all the values
 #in the verilog file has been parsed
 print(inputD)
+print(operations)
 print(bufferD)
 print(outputD)
 #print(inputArr)
 #print(bufferArr)
 #print(outputArr)
+
+
 
