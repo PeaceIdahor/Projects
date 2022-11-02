@@ -13,11 +13,11 @@ for line in f:
 				command = command.replace('!',"")
 				wordArrsave.append('!')
 				wordArrsave.append(command)
-			if '//' in command:
+			elif '//' in command:
 				command = command.replace('//',"")
 				wordArrsave.append('//')
 				wordArrsave.append(command)
-			if ';' in command:
+			elif ';' in command:
 				command = command.replace(';',"")
 				wordArrsave.append(command)
 				wordArrsave.append(';')
@@ -120,13 +120,13 @@ for index,word in enumerate(wordArrsave):
 			rightSide.append(wordArrsave[index2])
 			index2 +=1
 	for index,item in enumerate(rightSide):
-		if item in outputA and item !="&" and item !="!":
+		if item in outputA and item !="&" and item !="!" and item !="|" and item !="^":
 			inputA.append(item)
 			inpinA.append(indexMaster)
 			bufferA.append(item)
 			buffinA.append(indexMaster)
 		else:
-			if item !="&" and item !="!":
+			if item !="&" and item !="!" and item !="|" and item !="^":
 				if ";" not in item:
 					inputA.append(item)
 					inpinA.append(indexMaster)
@@ -152,15 +152,19 @@ for index,word in enumerate(wordArrsave):
 			connections.append(inputA[item])
 		operationsA.append([operationin,connections,out])
 	if "!" in rightSide:
-		print(rightSide)
-		connections = []
+		indexofItem = rightSide.index("!") + 1
+		connections = [rightSide[indexofItem]]
 		operationin = "Not" + f"_{indexMaster}"
 		#writeNode(operationin,"square")
 		indexes = list_duplicates_of(inpinA,indexMaster)
-		out= outputA[outinA.index(indexMaster)]
-		for item in indexes:
-			connections.append(inputA[item])
+		out= rightSide[indexofItem] +"^"
 		operationsA.append([operationin,connections,out])
+		for items in operationsA:
+			if items[2] != out:
+				for indexItem,item in enumerate(items[1]):
+					if item == rightSide[indexofItem]:
+						bufferA.append(out)
+						items[1][indexItem]= out
 	if "|" in rightSide:
 		connections = []
 		operationin = "Or" + f"_{indexMaster}"
@@ -187,7 +191,7 @@ for arrays in operationsA:
 	for items in arrays[1]:
 		if items not in bufferA:
 			writeNode(items,"invtriangle")
-#print(operationsA)
+print(operationsA)
 for arrays in operationsA:
 	for items in arrays[1]:
 		if items in bufferA:
@@ -199,7 +203,7 @@ for arrays in operationsA:
 	#writeEdgeNode(item[0],item[2])
 	if arrays[2] not in bufferA:
 		writeEdgeNode(arrays[0],arrays[2])
-
+print(inputA)
 fDot.write("}")
 
 
