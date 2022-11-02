@@ -1,6 +1,4 @@
-
-from tkinter.tix import InputOnly
-
+from operator import indexOf
 
 f = open("verilogTest2.v")
 wordArr = [] #an array of characters that appear in sequence
@@ -42,16 +40,16 @@ called=0
 
 #this is my function for writing two nodes connected by an edge to the dot file
 def setup():
-	fDot.write('splines="ortho"\n')
+	#fDot.write('splines="ortho"\n')
 	fDot.write('subgraph inputs{ rank="same"')
-	for item in inputD:
-		if item not in bufferD:
+	for item in inputA:
+		if item not in bufferA:
 			fDot.write(f" {item} ")
 	fDot.write('}\n')
 
 	fDot.write('subgraph outputs{rank="same"')
-	for item in outputD:
-		if item not in bufferD:
+	for item in outputA:
+		if item not in bufferA:
 			fDot.write(f" {item} ")
 	fDot.write('}\n')
 
@@ -68,45 +66,37 @@ def createSubgraph(input):
 	for item in input:
 		fDot.write(f"{item};")
 	fDot.write("\n}")
+def add_values_in_dict(sample_dict, key, list_of_values):
+    ''' Append multiple values to a key in 
+        the given dictionary '''
+    if key not in sample_dict:
+        sample_dict[key] = list()
+    sample_dict[key].extend(list_of_values)
+    return sample_dict
+def list_duplicates_of(seq,item):
+    start_at = -1
+    locs = []
+    while True:
+        try:
+            loc = seq.index(item,start_at+1)
+        except ValueError:
+            break
+        else:
+            locs.append(loc)
+            start_at = loc
+    return locs
+outputA = []
+outinA = []
+bufferA = []
+buffinA = []
+inputA = []
+inpinA = []
+operationsA = []
+operinA =[]
 
 
-outputArr = []
-bufferArr = []
-inputArr = []
-
-outputD = {}
-bufferD = {}
-inputD = {}
-operations = []
 #trying to get the amounts of outputs defined in the v file
 count1=0
-
-"""
-in this functiono I am geting the right and leftside of the inputs 
-Then I am writing each input to the dot file 
-"""
-def getValue(operationin,rightSide,outputN):
-	operationin = operationin + f"_{outputD[outputN]}"
-	#outputN = outputN + f"_{outputD[outputN]}"
-	writeNode(operationin,"square")
-	for item in rightSide:
-		if item in inputD and item not in bufferD:
-			writeNode(item,"invtriangle")
-			writeEdgeNode(item,operationin)
-		if item in inputD and item in bufferD:
-			index = outputD[item] 
-			for item2 in operations:
-				if item2[1] == index:
-					operationin2 = item2[0] + f"_{index}"
-					writeEdgeNode(operationin2,operationin,item)
-				else:
-					continue
-	#check to see if the outputN is in the buffer dict before creating an edge to that node
-	#then connect the edge to the output of that buffer node and not the buffer itself
-	#make the buffer name the label of the edge from the current node to the actual output node
-	if outputN not in bufferD:
-		writeNode(outputN,"triangle")
-		writeEdgeNode(operationin,outputN)
 
 """
 In this section I am going through my words array and checking for assign statements
@@ -123,55 +113,96 @@ for index,word in enumerate(wordArrsave):
 			wordArrsave.pop(index)
 	rightSide=[]
 	if word == "assign":
-		outputD[wordArrsave[index+1]] = indexMaster
-		outputN = wordArrsave[index+1]
-		index2=index+3
+		outputA.append(wordArrsave[index+1])
+		outinA.append(indexMaster)
+		index2=index+3		
 		while wordArrsave[index2] != ";":
 			rightSide.append(wordArrsave[index2])
 			index2 +=1
-		rightSide.append(";")
 	for index,item in enumerate(rightSide):
-		if item == "&": 
-			operations.append(["&",indexMaster])
-			count+=1
-			index2 = rightSide.index("&")
-			rightSide.pop(index2)
-			index2 = rightSide.index(";")
-			rightSide.pop(index2)
-			for item in rightSide:
-				if item in outputD:
-					inputD[item] = indexMaster
-					bufferD[item] = indexMaster
-				else:
-					inputD[item] = indexMaster
-
+		if item in outputA and item !="&" and item !="!":
+			inputA.append(item)
+			inpinA.append(indexMaster)
+			bufferA.append(item)
+			buffinA.append(indexMaster)
+		else:
+			if item !="&" and item !="!":
+				if ";" not in item:
+					inputA.append(item)
+					inpinA.append(indexMaster)
 setup()
 for index,word in enumerate(wordArrsave):
-	indexMaster = index
 	if word =="//": #checking to see if part of the code was commented 
 		while wordArrsave[index] !=";":
 			wordArrsave.pop(index)
 	rightSide=[]
 	if word == "assign":
-		outputN = wordArrsave[index+1]
+		indexMaster = index
 		index2=index+3
 		while wordArrsave[index2] != ";":
 			rightSide.append(wordArrsave[index2])
 			index2 +=1
-		rightSide.append(";")
-	for index,item in enumerate(rightSide):
-		if item == "&": 
-			getValue("&",rightSide,outputN)
-	if word =="endmodule":
-		fDot.write("}")
+	if "&" in rightSide:
+		connections = []
+		operationin = "And" + f"_{indexMaster}"
+		#writeNode(operationin,"square")
+		indexes = list_duplicates_of(inpinA,indexMaster)
+		out= outputA[outinA.index(indexMaster)]
+		for item in indexes:
+			connections.append(inputA[item])
+		operationsA.append([operationin,connections,out])
+	if "!" in rightSide:
+		print(rightSide)
+		connections = []
+		operationin = "Not" + f"_{indexMaster}"
+		#writeNode(operationin,"square")
+		indexes = list_duplicates_of(inpinA,indexMaster)
+		out= outputA[outinA.index(indexMaster)]
+		for item in indexes:
+			connections.append(inputA[item])
+		operationsA.append([operationin,connections,out])
+	if "|" in rightSide:
+		connections = []
+		operationin = "Or" + f"_{indexMaster}"
+		#writeNode(operationin,"square")
+		indexes = list_duplicates_of(inpinA,indexMaster)
+		out= outputA[outinA.index(indexMaster)]
+		for item in indexes:
+			connections.append(inputA[item])
+		operationsA.append([operationin,connections,out])
+	if "^" in rightSide:
+		connections = []
+		operationin = "Xor" + f"_{indexMaster}"
+		#writeNode(operationin,"square")
+		indexes = list_duplicates_of(inpinA,indexMaster)
+		out= outputA[outinA.index(indexMaster)]
+		for item in indexes:
+			connections.append(inputA[item])
+		operationsA.append([operationin,connections,out])
+	
+for arrays in operationsA:
+	writeNode(arrays[0],"square")
+	if arrays[2] not in bufferA:
+		writeNode(arrays[2],"triangle")
+	for items in arrays[1]:
+		if items not in bufferA:
+			writeNode(items,"invtriangle")
+#print(operationsA)
+for arrays in operationsA:
+	for items in arrays[1]:
+		if items in bufferA:
+			for itemx in operationsA:
+				if itemx[2] == items:
+					writeEdgeNode(itemx[0],arrays[0],items)
+		else:
+			writeEdgeNode(items,arrays[0])
+	#writeEdgeNode(item[0],item[2])
+	if arrays[2] not in bufferA:
+		writeEdgeNode(arrays[0],arrays[2])
 
+fDot.write("}")
+
+
+#print(inpinA)
 #trying to figure out how to iterate through the dictionary and call the get value fuction with the items in the dictionary after all the values
 #in the verilog file has been parsed
-print(inputD)
-print(operations)
-print(bufferD)
-print(outputD)
-#print(inputArr)
-#print(bufferArr)
-#print(outputArr)
-
