@@ -7,7 +7,7 @@ count = 0
 
 for line in f:
 	for word in line:
-		if word == ' ' or word == '(' or word == ')' or word == '\n' or word == '	' or word==',' : #creating a line of demarkation to seperate characters in sequence
+		if word == ' ' or word == '\n' or word == '	' or word==',': #creating a line of demarkation to seperate characters in sequence
 			command = ''.join(wordArr) #joining those characters into a str word that represents some kind of command
 			if '!' in command:
 				command = command.replace('!',"")
@@ -21,6 +21,14 @@ for line in f:
 				command = command.replace(';',"")
 				wordArrsave.append(command)
 				wordArrsave.append(';')
+			elif '(' in command:
+				command = command.replace('(',"")
+				wordArrsave.append('(')
+				wordArrsave.append(command)
+			elif ')' in command:
+				command = command.replace(')',"")
+				wordArrsave.append(command)
+				wordArrsave.append(')')
 			else:
 				wordArrsave.append(command) #appending that command to my list of words that I will refer back to later
 			wordArr = []
@@ -92,6 +100,7 @@ buffinA = []
 inputA = []
 inpinA = []
 operationsA = []
+operationsA2 = []
 operinA =[]
 
 
@@ -126,11 +135,15 @@ for index,word in enumerate(wordArrsave):
 			bufferA.append(item)
 			buffinA.append(indexMaster)
 		else:
-			if item !="&" and item !="!" and item !="|" and item !="^":
+			if item !="&" and item !="!" and item !="|" and item !="^" and item !="(" and item !=")":
 				if ";" not in item:
 					inputA.append(item)
 					inpinA.append(indexMaster)
 setup()
+"""
+populating the operations array
+"""
+
 for index,word in enumerate(wordArrsave):
 	if word =="//": #checking to see if part of the code was commented 
 		while wordArrsave[index] !=";":
@@ -144,13 +157,166 @@ for index,word in enumerate(wordArrsave):
 			index2 +=1
 	if "&" in rightSide:
 		connections = []
+		perenthesisA = []
 		operationin = "And" + f"_{indexMaster}"
+		out= outputA[outinA.index(indexMaster)]
+		if "(" in rightSide and ")" in rightSide:
+			rp = rightSide.index("(")
+			lp = rightSide.index(")")
+			while rp != lp-1:
+				perenthesisA.append(rightSide[rp+1])
+				rp +=1
+		if "&" in perenthesisA:
+			perenthesisA.pop(perenthesisA.index("&"))
+			operationin = "And" + f"_{indexMaster}"
+			#writeNode(operationin,"square")
+			out= f"{perenthesisA[0]}" + "&" + f"{perenthesisA[1]}"
+			bufferA.append(out)
+			operationsA2.append([operationin,perenthesisA,out])
+		elif len(perenthesisA) > 0 and "&" not in perenthesisA and "&" in rightSide:
+			perenthesisA.pop(1)
+			for item in operationsA2:
+				if item[1] == perenthesisA:
+					connections.append(item[2])
+			indexes = list_duplicates_of(inpinA,indexMaster)
+			for item in indexes:
+				if inputA[item] not in perenthesisA:
+					connections.append(inputA[item])
+			operationsA2.append([operationin,connections,out])
+		else:
+			#writeNode(operationin,"square")
+			indexes = list_duplicates_of(inpinA,indexMaster)
+			for item in indexes:
+				connections.append(inputA[item])
+			operationsA2.append([operationin,connections,out])
+	if "!" in rightSide:
+		indexofItem = rightSide.index("!") + 1
+		connections = [rightSide[indexofItem]]
+		operationin = "Not" + f"_{indexMaster}"
 		#writeNode(operationin,"square")
 		indexes = list_duplicates_of(inpinA,indexMaster)
+		out= rightSide[indexofItem] +"^"
+		operationsA2.append([operationin,connections,out])
+		for items in operationsA:
+			if items[2] != out:
+				for indexItem,item in enumerate(items[1]):
+					if item == rightSide[indexofItem]:
+						bufferA.append(out)
+						items[1][indexItem]= out
+	if "|" in rightSide:
+		perenthesisA = []
+		connections = []
+		out= outputA[outinA.index(indexMaster)]	
+		operationin = "Or" + f"_{indexMaster}"
+		if "(" in rightSide and ")" in rightSide:
+			rp = rightSide.index("(")
+			lp = rightSide.index(")")
+			while rp != lp-1:
+				perenthesisA.append(rightSide[rp+1])
+				rp +=1
+		if "|" in perenthesisA:
+			perenthesisA.pop(perenthesisA.index("|"))
+			operationin = "Or" + f"_{indexMaster}"
+			out= f"{perenthesisA[0]}" + "|" + f"{perenthesisA[1]}"
+			operationsA2.append([operationin,perenthesisA,out])
+		elif len(perenthesisA)> 0 and "|" not in perenthesisA and "|" in rightSide:
+			perenthesisA.pop(1)
+			for item in operationsA2:
+				if item[1] == perenthesisA:
+					connections.append(item[2])
+			indexes = list_duplicates_of(inpinA,indexMaster)
+			for item in indexes:
+				if inputA[item] not in perenthesisA:
+					connections.append(inputA[item])
+			operationsA2.append([operationin,connections,out])
+		else:
+			indexes = list_duplicates_of(inpinA,indexMaster)
+			out= outputA[outinA.index(indexMaster)]
+			for item in indexes:
+				connections.append(inputA[item])
+			operationsA2.append([operationin,connections,out])
+	if "^" in rightSide:
+		perenthesisA = []
+		connections = []
+		out= outputA[outinA.index(indexMaster)]	
+		operationin = "Xor" + f"_{indexMaster}"
+		if "(" in rightSide and ")" in rightSide:
+			rp = rightSide.index("(")
+			lp = rightSide.index(")")
+			while rp != lp-1:
+				perenthesisA.append(rightSide[rp+1])
+				rp +=1
+		if "|" in perenthesisA:
+			perenthesisA.pop(perenthesisA.index("|"))
+			operationin = "Xor" + f"_{indexMaster}"
+			out= f"{perenthesisA[0]}" + "^" + f"{perenthesisA[1]}"
+			bufferA.append(out)
+			operationsA2.append([operationin,perenthesisA,out])
+		elif len(perenthesisA)> 0 and "^" not in perenthesisA and "^" in rightSide:
+			perenthesisA.pop(1)
+			for item in operationsA2:
+				if item[1] == perenthesisA:
+					connections.append(item[2])
+			indexes = list_duplicates_of(inpinA,indexMaster)
+			for item in indexes:
+				if inputA[item] not in perenthesisA:
+					connections.append(inputA[item])
+			operationsA2.append([operationin,connections,out])
+		else:
+			indexes = list_duplicates_of(inpinA,indexMaster)
+			out= outputA[outinA.index(indexMaster)]
+			for item in indexes:
+				connections.append(inputA[item])
+			operationsA2.append([operationin,connections,out])
+	
+"""
+adjusting the operations array 
+"""
+for index,word in enumerate(wordArrsave):
+	if word =="//": #checking to see if part of the code was commented 
+		while wordArrsave[index] !=";":
+			wordArrsave.pop(index)
+	rightSide=[]
+	if word == "assign":
+		indexMaster = index
+		index2=index+3
+		while wordArrsave[index2] != ";":
+			rightSide.append(wordArrsave[index2])
+			index2 +=1
+	if "&" in rightSide:
+		connections = []
+		perenthesisA = []
+		operationin = "And" + f"_{indexMaster}"
 		out= outputA[outinA.index(indexMaster)]
-		for item in indexes:
-			connections.append(inputA[item])
-		operationsA.append([operationin,connections,out])
+		if "(" in rightSide and ")" in rightSide:
+			rp = rightSide.index("(")
+			lp = rightSide.index(")")
+			while rp != lp-1:
+				perenthesisA.append(rightSide[rp+1])
+				rp +=1
+		if "&" in perenthesisA:
+			perenthesisA.pop(perenthesisA.index("&"))
+			operationin = "And" + f"_{indexMaster}"
+			#writeNode(operationin,"square")
+			out= f"{perenthesisA[0]}" + "&" + f"{perenthesisA[1]}"
+			bufferA.append(out)
+			operationsA.append([operationin,perenthesisA,out])
+		elif len(perenthesisA) > 0 and "&" not in perenthesisA and "&" in rightSide:
+			perenthesisA.pop(1)
+			for item in operationsA2:
+				if item[1] == perenthesisA:
+					connections.append(item[2])
+			indexes = list_duplicates_of(inpinA,indexMaster)
+			for item in indexes:
+				if inputA[item] not in perenthesisA:
+					connections.append(inputA[item])
+			operationsA.append([operationin,connections,out])
+		else:
+			#writeNode(operationin,"square")
+			indexes = list_duplicates_of(inpinA,indexMaster)
+			for item in indexes:
+				connections.append(inputA[item])
+			operationsA.append([operationin,connections,out])
 	if "!" in rightSide:
 		indexofItem = rightSide.index("!") + 1
 		connections = [rightSide[indexofItem]]
@@ -166,24 +332,84 @@ for index,word in enumerate(wordArrsave):
 						bufferA.append(out)
 						items[1][indexItem]= out
 	if "|" in rightSide:
+		perenthesisA = []
 		connections = []
+		out= outputA[outinA.index(indexMaster)]	
 		operationin = "Or" + f"_{indexMaster}"
-		#writeNode(operationin,"square")
-		indexes = list_duplicates_of(inpinA,indexMaster)
-		out= outputA[outinA.index(indexMaster)]
-		for item in indexes:
-			connections.append(inputA[item])
-		operationsA.append([operationin,connections,out])
+		if "(" in rightSide and ")" in rightSide:
+			rp = rightSide.index("(")
+			lp = rightSide.index(")")
+			while rp != lp-1:
+				perenthesisA.append(rightSide[rp+1])
+				rp +=1
+		if "|" in perenthesisA:
+			perenthesisA.pop(perenthesisA.index("|"))
+			operationin = "Or" + f"_{indexMaster}"
+			out= f"{perenthesisA[0]}" + "|" + f"{perenthesisA[1]}"
+			bufferA.append(out)
+			operationsA.append([operationin,perenthesisA,out])
+		elif len(perenthesisA)> 0 and "|" not in perenthesisA and "|" in rightSide:
+			perenthesisA.pop(1)
+			for item in operationsA2:
+				if item[1] == perenthesisA:
+					connections.append(item[2])
+			indexes = list_duplicates_of(inpinA,indexMaster)
+			for item in indexes:
+				if inputA[item] not in perenthesisA:
+					connections.append(inputA[item])
+			operationsA.append([operationin,connections,out])
+		else:
+			indexes = list_duplicates_of(inpinA,indexMaster)
+			out= outputA[outinA.index(indexMaster)]
+			for item in indexes:
+				connections.append(inputA[item])
+			operationsA.append([operationin,connections,out])
 	if "^" in rightSide:
+		perenthesisA = []
 		connections = []
+		out= outputA[outinA.index(indexMaster)]	
 		operationin = "Xor" + f"_{indexMaster}"
-		#writeNode(operationin,"square")
-		indexes = list_duplicates_of(inpinA,indexMaster)
-		out= outputA[outinA.index(indexMaster)]
-		for item in indexes:
-			connections.append(inputA[item])
-		operationsA.append([operationin,connections,out])
-	
+		if "(" in rightSide and ")" in rightSide:
+			rp = rightSide.index("(")
+			lp = rightSide.index(")")
+			while rp != lp-1:
+				perenthesisA.append(rightSide[rp+1])
+				rp +=1
+		if "|" in perenthesisA:
+			perenthesisA.pop(perenthesisA.index("|"))
+			operationin = "Xor" + f"_{indexMaster}"
+			out= f"{perenthesisA[0]}" + "^" + f"{perenthesisA[1]}"
+			bufferA.append(out)
+			operationsA.append([operationin,perenthesisA,out])
+		elif len(perenthesisA)> 0 and "^" not in perenthesisA and "^" in rightSide:
+			perenthesisA.pop(1)
+			for item in operationsA2:
+				if item[1] == perenthesisA:
+					connections.append(item[2])
+			indexes = list_duplicates_of(inpinA,indexMaster)
+			for item in indexes:
+				if inputA[item] not in perenthesisA:
+					connections.append(inputA[item])
+			operationsA.append([operationin,connections,out])
+		else:
+			indexes = list_duplicates_of(inpinA,indexMaster)
+			out= outputA[outinA.index(indexMaster)]
+			for item in indexes:
+				connections.append(inputA[item])
+			operationsA.append([operationin,connections,out])
+#preparing to accept user inputs 
+for items in inputA:
+	if items in bufferA:
+		inputA.pop(inputA.index(items))
+Answer = input("Do You want to specify inputs? (yes/no):")
+if Answer == "yes" or Answer =="yes" or Answer == "Y" or Answer == "y":
+	DictValues = {}
+	for items in inputA:
+		DictValues[items] = int(input(f"Enter value for {items}:"))
+		if DictValues[items] > 1:
+			raise Exception("Values must be 1 or 0")
+		else:
+			continue
 for arrays in operationsA:
 	writeNode(arrays[0],"square")
 	if arrays[2] not in bufferA:
@@ -191,7 +417,7 @@ for arrays in operationsA:
 	for items in arrays[1]:
 		if items not in bufferA:
 			writeNode(items,"invtriangle")
-print(operationsA)
+print(operationsA2)
 for arrays in operationsA:
 	for items in arrays[1]:
 		if items in bufferA:
@@ -203,7 +429,7 @@ for arrays in operationsA:
 	#writeEdgeNode(item[0],item[2])
 	if arrays[2] not in bufferA:
 		writeEdgeNode(arrays[0],arrays[2])
-print(inputA)
+#print(wordArrsave)
 fDot.write("}")
 
 
