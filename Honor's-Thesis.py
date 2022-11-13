@@ -52,12 +52,21 @@ def setup():
 	fDot.write('subgraph inputs{ rank="same"')
 	for item in inputA:
 		if item not in bufferA:
+			if "(" in item:
+				item = item.replace("(","")
+			if ")" in item:
+				item = item.replace(")","")
 			fDot.write(f' "{item}" ')
 	fDot.write('}\n')
 
 	fDot.write('subgraph outputs{rank="same"')
 	for item in outputA:
 		if item not in bufferA:
+			if "(" in item:
+				item = item.replace("(","")
+			if ")" in item:
+				item = item.replace(")","")
+			print(item)
 			fDot.write(f' "{item}" ')
 	fDot.write('}\n')
 
@@ -140,6 +149,7 @@ for index,word in enumerate(wordArrsave):
 					inputA.append(item)
 					inpinA.append(indexMaster)
 			
+
 setup()
 """
 populating the operations array
@@ -324,7 +334,7 @@ for index,word in enumerate(wordArrsave):
 		operationin = "Not" + f"_{indexMaster}"
 		#writeNode(operationin,"square")
 		indexes = list_duplicates_of(inpinA,indexMaster)
-		out= rightSide[indexofItem] +"^"
+		out= "!"+rightSide[indexofItem]
 		operationsA.append([operationin,connections,out])
 		for items in operationsA:
 			if items[2] != out:
@@ -382,7 +392,6 @@ for index,word in enumerate(wordArrsave):
 			out= f"{perenthesisA[0]}" + "^" + f"{perenthesisA[1]}"
 			bufferA.append(out)
 			operationsA.append([operationin,perenthesisA,out])
-			print(operationsA)
 		elif len(perenthesisA)> 0 and "^" not in perenthesisA and "^" in rightSide:
 			perenthesisA.pop(1)
 			for item in operationsA2:
@@ -400,6 +409,30 @@ for index,word in enumerate(wordArrsave):
 				connections.append(inputA[item])
 			operationsA.append([operationin,connections,out])
 #preparing to accept user inputs 
+for index,item in enumerate(bufferA):
+	if "(" in item:
+		bufferA[index] = item.replace("(","")
+	if ")" in item:
+		bufferA[index]= item.replace(")","")
+for index,item in enumerate(inputA):
+	if "(" in item:
+		inputA[index] = item.replace("(","")
+	if ")" in item:
+		inputA[index]= item.replace(")","")
+
+for index1, arrays in enumerate(operationsA):
+	for index2,items in enumerate(arrays):
+		if isinstance(items,list):
+			for index3,item in enumerate(items):
+				if "(" in item:
+					operationsA[index1][index2][index3] = item.replace("(","")
+				if ")" in item:
+					operationsA[index1][index2][index3] = item.replace(")","")
+		else:
+			if "(" in items:
+				arrays[index2] = items.replace("(","")
+			if ")" in items:
+				arrays[index2] = items.replace(")","")
 for items in inputA:
 	if items in bufferA:
 		inputA.pop(inputA.index(items))
@@ -419,8 +452,6 @@ for arrays in operationsA:
 	for items in arrays[1]:
 		if items not in bufferA:
 			writeNode(items,"invtriangle")
-print(operationsA)
-print(operationsA2)
 for arrays in operationsA:
 	for items in arrays[1]:
 		if items in bufferA:
@@ -429,13 +460,6 @@ for arrays in operationsA:
 					writeEdgeNode(itemx[0],arrays[0],items)
 		else:
 			writeEdgeNode(items,arrays[0])
-	#writeEdgeNode(item[0],item[2])
 	if arrays[2] not in bufferA:
 		writeEdgeNode(arrays[0],arrays[2])
-#print(wordArrsave)
 fDot.write("}")
-
-
-#print(inpinA)
-#trying to figure out how to iterate through the dictionary and call the get value fuction with the items in the dictionary after all the values
-#in the verilog file has been parsed
