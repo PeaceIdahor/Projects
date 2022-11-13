@@ -52,13 +52,13 @@ def setup():
 	fDot.write('subgraph inputs{ rank="same"')
 	for item in inputA:
 		if item not in bufferA:
-			fDot.write(f" {item} ")
+			fDot.write(f' "{item}" ')
 	fDot.write('}\n')
 
 	fDot.write('subgraph outputs{rank="same"')
 	for item in outputA:
 		if item not in bufferA:
-			fDot.write(f" {item} ")
+			fDot.write(f' "{item}" ')
 	fDot.write('}\n')
 
 def writeNode(inN,shape):
@@ -139,6 +139,7 @@ for index,word in enumerate(wordArrsave):
 				if ";" not in item:
 					inputA.append(item)
 					inpinA.append(indexMaster)
+			
 setup()
 """
 populating the operations array
@@ -381,6 +382,7 @@ for index,word in enumerate(wordArrsave):
 			out= f"{perenthesisA[0]}" + "^" + f"{perenthesisA[1]}"
 			bufferA.append(out)
 			operationsA.append([operationin,perenthesisA,out])
+			print(operationsA)
 		elif len(perenthesisA)> 0 and "^" not in perenthesisA and "^" in rightSide:
 			perenthesisA.pop(1)
 			for item in operationsA2:
@@ -417,6 +419,7 @@ for arrays in operationsA:
 	for items in arrays[1]:
 		if items not in bufferA:
 			writeNode(items,"invtriangle")
+print(operationsA)
 print(operationsA2)
 for arrays in operationsA:
 	for items in arrays[1]:
