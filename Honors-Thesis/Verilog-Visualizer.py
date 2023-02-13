@@ -6,17 +6,24 @@ print(os.getcwd())
 f = open("verilogTest2.v")
 
 wordArrsave = verilogFuncs.parser(f) #extracting important information from my verilog file
-fDot = open("Translate.dot","a")
+dotFile = open("Translate.dot","a")
 
-dotfile = prepareDot(fDot)
+dotfile = prepareDot(dotFile)
 dotfile.openDot()#opening a dot file
 
 #outputA,outinA,bufferA,buffinA,inputA,inpinA = verilogFuncs.populateA(wordArrsave)
 inputA = []
-bufferA = []
+bufferA = [] #buffer array containing the intermediates values that are not inputs or outputs
 outputA = []
-operationsA = []
+operationsA = [] #array containing all the operations and the inputs and outputs to those operations
 notDict = []
+
+"""
+This function gives an initial view of the resulting output of each assign statement in it's simplest form
+So given an assign statement such as
+assign c = b & f;
+the strip function returns b&f
+"""
 def strip(array):
 	while "(" in array:
 		array.remove("(")
@@ -24,6 +31,14 @@ def strip(array):
 		array.remove(")")
 	return ''.join(array)
 
+"""
+This returnOut function does most of the translating of the verilog. It is a recursive function that receives as 
+inputs,
+Array:  An array containing the operation performed in the assign statement
+indexMaster: A number used to differenciate between different operations of the same type
+outputE: the result of the strip function showing what the output of the returnOut function should look like
+outputN: the variable the output of the assign statement is assigned to
+"""
 def returnOut(Array,indexMaster,outputE,outputN=""):
 	if "(" in Array:
 		openind = []
@@ -208,6 +223,13 @@ def returnOut(Array,indexMaster,outputE,outputN=""):
 			else:
 				operationsA.append([operationin,Array,out])
 			return operationin,Array,out
+
+"""
+This for loop is used to search for assign statements and then call the returnOut function with the previously 
+specified perameters.
+It also ignores any commented lined in the verilog script.
+You can comment lines of verilog, but you cannot add commented lines that are not verilog
+"""
 for index,word in enumerate(wordArrsave):
 	if word =="//": #checking to see if part of the code was commented 
 		while wordArrsave[index] !=";":
@@ -225,22 +247,7 @@ for index,word in enumerate(wordArrsave):
 		Array = returnOut(rightSide,indexMaster,outputE,outputN)
 		#returnOut(Array,indexMaster)
 
-
-j = 0
-for Array in operationsA:
-	if len(notDict) >0:
-		if j <=1 and Array[1][0] == notDict[j][0]:
-			Array[1][0] =  notDict[j][0] + f"_{notDict[j][1]}"
-			bufferA.append(Array[1][0])
-			j +=1
-j=0
-for Array in operationsA:
-	if (len(notDict) > 0):
-		if j <=1 and Array[2] == notDict[j][0]:
-			Array[2] =  notDict[j][0] + f"_{notDict[j][1]}"
-			bufferA.append(Array[2])
-			j +=1
-
+#checking to see if the visual representation is in debug mode or not
 val = input("Debug mode on ? [y/n] :")
 
 if val == "y" or val == "Y":
@@ -251,12 +258,39 @@ elif val == "n" or val == "N":
 	print("Debug Mode off")
 else:
 	raise Exception("Sorry Y or N only")
+
+#getting actual inputs from the user in terms of 0 or 1
+inputSpecifiedArray = []
+specifyInputs = input("Specifying inputs? [y/n] :")
+if specifyInputs == "y" or specifyInputs == "Y":
+	inputon = 1
+	inputSpecified = input("Seperate input declaration with a space: ")
+	for item in inputSpecified:
+		inputSpecifiedArray.append(item)
+elif specifyInputs == "n" or specifyInputs == "N":
+	inputon = 0
+else:
+	raise Exception("Sorry Y or N only")
+
+if inputon == 1:
+	for index,item in enumerate(inputSpecifiedArray):
+		if item == "=":
+			inputVariable = inputSpecifiedArray[index-1]
+			if inputVariable not in inputA:
+				raise Exception("Assign values only to primary inputs")
+			else:
+				for index,item in enumerate(wordArrsave):
+					if item == inputVariable:
+						wordArrsave[index] = inputSpecifiedArray[index+1]
+
 dotfile.setup(inputA,bufferA,outputA)
 
+#calling the visual representation functions that write to the dot file
 verilogFuncs.processVisual(bufferA,operationsA,inputA)
 
-verilogFuncs.writeVisuals(fDot,operationsA,bufferA,labelon)
-dotfile.endFile()
+verilogFuncs.writeVisuals(dotFile,operationsA,bufferA,labelon)
+dotfile.endFile() #closing the dotfile
 
-print(wordArrsave)
+#print(wordArrsave)
 #print(operationsA)
+#print(inputSpecifiedArray)
