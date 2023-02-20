@@ -1,9 +1,10 @@
 from functions import verilogFuncs
 from functions import prepareDot
 import os
+import re
 
 print(os.getcwd())
-f = open("verilogTest2.v")
+f = open("f2-aig.v")
 
 wordArrsave = verilogFuncs.parser(f) #extracting important information from my verilog file
 dotFile = open("Translate.dot","a")
@@ -17,7 +18,7 @@ bufferA = [] #buffer array containing the intermediates values that are not inpu
 outputA = []
 operationsA = [] #array containing all the operations and the inputs and outputs to those operations
 notDict = []
-
+notTrack = {}
 """
 This function gives an initial view of the resulting output of each assign statement in it's simplest form
 So given an assign statement such as
@@ -40,6 +41,12 @@ outputE: the result of the strip function showing what the output of the returnO
 outputN: the variable the output of the assign statement is assigned to
 """
 def returnOut(Array,indexMaster,outputE,outputN=""):
+	if len(Array) == 1:
+		for indexItem,items in enumerate(operationsA):
+			if items[2] == Array[0]:
+				operationsA[indexItem][2] = outputN
+				outputA.append(outputN)
+				outputA.remove(Array[0])
 	if "(" in Array:
 		openind = []
 		closeind = []
@@ -149,8 +156,12 @@ def returnOut(Array,indexMaster,outputE,outputN=""):
 			indexV = Array[Array.index("~")+1]
 			Arrayin = [indexV]
 			out= "~" + f"{indexV}"
+			if out in bufferA:
+				operationin = notTrack[out]
+			else:
+				bufferA.append(out)
+				notTrack[out] = operationin 
 			notDict.append([out,indexMaster])
-			bufferA.append(out)
 			inputA.append(indexV)
 			if indexV in outputA:
 				bufferA.append(indexV)
@@ -160,7 +171,7 @@ def returnOut(Array,indexMaster,outputE,outputN=""):
 			"""
 			operationsA.append([operationin,Arrayin,out])
 			if len(Array) >1:
-				bufferA.append(out)
+				#bufferA.append(out)
 				indexf = Array.index(indexV)
 				Array.pop(indexf)
 				Array.insert(indexf,out)
@@ -291,6 +302,8 @@ verilogFuncs.processVisual(bufferA,operationsA,inputA)
 verilogFuncs.writeVisuals(dotFile,operationsA,bufferA,labelon)
 dotfile.endFile() #closing the dotfile
 
+
 #print(wordArrsave)
 #print(operationsA)
 #print(inputSpecifiedArray)
+#print(bufferA)
