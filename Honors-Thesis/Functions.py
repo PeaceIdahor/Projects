@@ -9,6 +9,16 @@ class verilogFuncs:
                 if word == ' ' or word == '\n' or word == '	' or word==',': #creating a line of demarkation to seperate characters in sequence
                     command = ''.join(wordArr) #joining those characters into a str word that represents some kind of command
                     check = 0
+                    if "~" in command:
+                        check = 1
+                        if command in wordArrsave:
+                            wordArrsave.remove(command)
+                            index -=1
+                        command = command.replace('~',"")
+                        wordArrsave.append('~')
+                        index+=1
+                        wordArrsave.append(command)
+                        index+=1
                     if '(' in command:
                         check = 1
                         if command in wordArrsave:
@@ -100,6 +110,7 @@ class verilogFuncs:
                     if ")" in items:
                         arrays[index2] = items.replace(")","")       
     def writeVisuals(fDot,operationsA,bufferA,labelon):
+        savedArr = []
         dotfile = prepareDot(fDot)
         for arrays in operationsA:
             dotfile.writeNode(arrays[0],"square")
@@ -114,13 +125,20 @@ class verilogFuncs:
                     for itemx in operationsA:
                         if itemx[2] == items:
                             if labelon ==1:
-                                dotfile.writeEdgeNode(itemx[0],arrays[0],items)
+                                if f"{itemx[0],arrays[0],items}" not in savedArr:
+                                    savedArr.append(f"{itemx[0],arrays[0],items}")
+                                    dotfile.writeEdgeNode(itemx[0],arrays[0],items)
                             else:
-                                dotfile.writeEdgeNode(itemx[0],arrays[0])
+                                if f"{itemx[0],arrays[0]}" not in savedArr:
+                                    savedArr.append(f"{itemx[0],arrays[0]}")
+                                    dotfile.writeEdgeNode(itemx[0],arrays[0])
                 else:
-                    dotfile.writeEdgeNode(items,arrays[0])
+                    if f"{items[0],arrays[0]}" not in savedArr:
+                        savedArr.append(f"{items[0],arrays[0]}")
+                        dotfile.writeEdgeNode(items,arrays[0])
             if arrays[2] not in bufferA:
-                dotfile.writeEdgeNode(arrays[0],arrays[2])
+                if f"{arrays[0],arrays[2]}":
+                    dotfile.writeEdgeNode(arrays[0],arrays[2])
 class prepareDot:
     def __init__(self,fDot):
         self.fDot = fDot
