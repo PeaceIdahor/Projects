@@ -1,12 +1,8 @@
 from functions import verilogFuncs
-from functions import prepareDot
-import os
-import re
-
-print(os.getcwd())
-f = open("f2-aig.v")
-
-wordArrsave = verilogFuncs.parser(f) #extracting important information from my verilog file
+from functions import prepareDot,simulationInput
+import sys
+#f = sys.argv[1]
+wordArrsave = verilogFuncs.parser("f2-aig.v") #extracting important information from my verilog file
 dotFile = open("Translate.dot","a")
 
 dotfile = prepareDot(dotFile)
@@ -14,6 +10,7 @@ dotfile.openDot()#opening a dot file
 
 #outputA,outinA,bufferA,buffinA,inputA,inpinA = verilogFuncs.populateA(wordArrsave)
 inputA = []
+inputPrimary = []
 bufferA = [] #buffer array containing the intermediates values that are not inputs or outputs
 outputA = []
 operationsA = [] #array containing all the operations and the inputs and outputs to those operations
@@ -256,6 +253,11 @@ for index,word in enumerate(wordArrsave):
 		rightside2 = rightSide.copy()
 		outputE = strip(rightside2)
 		Array = returnOut(rightSide,indexMaster,outputE,outputN)
+	if word == "input":
+		indexInput = index +1
+		while wordArrsave[indexInput] != ";":
+			inputPrimary.append(wordArrsave[indexInput])
+			indexInput +=1
 		#returnOut(Array,indexMaster)
 
 #checking to see if the visual representation is in debug mode or not
@@ -271,35 +273,43 @@ else:
 	raise Exception("Sorry Y or N only")
 
 #getting actual inputs from the user in terms of 0 or 1
-inputSpecifiedArray = []
+inputSpecifiedArray = {}
 specifyInputs = input("Specifying inputs? [y/n] :")
 if specifyInputs == "y" or specifyInputs == "Y":
 	inputon = 1
-	inputSpecified = input("Seperate input declaration with a space: ")
-	for item in inputSpecified:
-		inputSpecifiedArray.append(item)
+	for item in inputPrimary:
+		inputSpecified = input(f"{item}: ")
+		if inputSpecified =="0" or inputSpecified == "1":
+			inputSpecifiedArray[item] = inputSpecified
+		else:
+			raise Exception("Input must be 0 or 1")
 elif specifyInputs == "n" or specifyInputs == "N":
 	inputon = 0
 else:
 	raise Exception("Sorry Y or N only")
 
-if inputon == 1:
-	for index,item in enumerate(inputSpecifiedArray):
-		if item == "=":
-			inputVariable = inputSpecifiedArray[index-1]
-			if inputVariable not in inputA:
-				raise Exception("Assign values only to primary inputs")
-			else:
-				for index,item in enumerate(wordArrsave):
-					if item == inputVariable:
-						wordArrsave[index] = inputSpecifiedArray[index+1]
-
+def simulation(operationsA, inputSpecifiedArray):
+	for index1,items in enumerate(operationsA):
+		operationsA[index1].append([])
+		operationsA[index1].append([])
+		for inputs in items[1]:
+			for key in inputSpecifiedArray:
+				if inputs == key:
+					operationsA[index1][3].append(inputSpecifiedArray[key])
+					if operationsA[index1][0][0] == "A" and len(operationsA[index1][3])>1:
+						inputSpecifiedArray[operationsA[index1][2]] = simulationInput.and_gate(operationsA[index1][3][0],operationsA[index1][3][1])
+						operationsA[index1][4].append(inputSpecifiedArray[operationsA[index1][2]])
+						break
+					if operationsA[index1][0][0] == "n":
+						inputSpecifiedArray[operationsA[index1][2]] = simulationInput.not_gate(operationsA[index1][3][0])
+						operationsA[index1][4].append(inputSpecifiedArray[operationsA[index1][2]])
+						break
 dotfile.setup(inputA,bufferA,outputA)
-
 #calling the visual representation functions that write to the dot file
 verilogFuncs.processVisual(bufferA,operationsA,inputA)
-
-verilogFuncs.writeVisuals(dotFile,operationsA,bufferA,labelon)
+if inputon ==1:
+	simulation(operationsA,inputSpecifiedArray)
+verilogFuncs.writeVisuals(dotFile,operationsA,bufferA,labelon,inputon)
 dotfile.endFile() #closing the dotfile
 
 
@@ -307,3 +317,4 @@ dotfile.endFile() #closing the dotfile
 #print(operationsA)
 #print(inputSpecifiedArray)
 #print(bufferA)
+#print(inputPrimary)
