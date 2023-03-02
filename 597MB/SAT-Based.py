@@ -1,9 +1,13 @@
 import sys
 from functions import verilogFuncs
 from functions import prepareCnf
+"""
 f = sys.argv[1]
 target= sys.argv[3]
-roll = sys.argv[2]
+roll = int(sys.argv[2])
+"""
+target = "10"
+roll = 1
 print(roll)
 targetState = []
 for bit in reversed(target):
@@ -12,7 +16,7 @@ inputs = []
 regs = []
 outputs = []
 wires = []
-wordArrsave = verilogFuncs.parser(f)
+wordArrsave = verilogFuncs.parser("ex1.v")
 cnfFile = open("example1.dimacs","a")
 numberOfClauses = 0
 numberOfVariables = 0
@@ -44,7 +48,6 @@ for index,word in enumerate(wordArrsave):
 			wires.append(wordArrsave[index2])
 			index2 +=1
 	elif word == "and" or word=="not":
-		numberOfClauses +=1
 		if word=="and":
 			output1 = wordArrsave[index+2]
 			input1 = wordArrsave[index+3]
@@ -80,9 +83,10 @@ for item in outputs:
 #print(inputsDict)
 #print(regsDict)
 #print(outputsDict)
-print(wiresDict)
+#print(wiresDict)
 #print(wordArrsave)
-
+for arrays in clauses:
+	numberOfClauses +=1
 for index,clause in enumerate(clauses):
 	for index2,item in enumerate(clause):
 		for key in inputsDict:
@@ -106,7 +110,7 @@ for index,clause in enumerate(clauses):
 print(clauses)
 
 justAVar = prepareCnf(cnfFile)
-justAVar.openDot(numberOfVariables,numberOfClauses,regsDict)
+justAVar.openDot(numberOfVariables,numberOfClauses,regsDict,roll)
 
 justAVar.write(clauses,int(roll))
-
+justAVar.writeTransition(regsDict,wiresDict,roll)
