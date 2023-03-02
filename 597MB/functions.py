@@ -40,34 +40,56 @@ class verilogFuncs:
 class prepareCnf:
     def __init__(self,fcnf):
         self.fcnf = fcnf
-    def openDot(self,numberOfVariables,numberOfClauses,regsDict):
+    def openDot(self,numberOfVariables,numberOfClauses,regsDict,roll):
+        self.numberOfVariables = numberOfVariables
         self.fcnf.truncate(0)
-        self.fcnf.write(f"p cnf {numberOfVariables} {numberOfClauses}\n")
+        self.fcnf.write(f"p cnf {(self.numberOfVariables-1)*roll} {numberOfClauses*roll}\n")
         self.fcnf.write("c The initial condition is 0 for all state bits\n")
         for key in regsDict:
             self.fcnf.write(f"{regsDict[key]} 0\n")
     def write(self,clauses,roll=1):
         #print(clauses)
         #print(targetState)
-        i=1
-        while i<=roll:
-            self.fcnf.write(f"Rolling #{i}\n")
+        numberOfactualVar = self.numberOfVariables -1
+        i=0
+        while i<=(roll-1):
+            self.fcnf.write(f"c Rolling #{i+1}\n")
             for clause in clauses:
                 if clause[0] == "And":
                     self.fcnf.write("c The AND gate ...\n")
-                    self.fcnf.write(f"{i*clause[2]} -{i*clause[1]} 0\n") #(aV-x)
-                    self.fcnf.write(f"{i*clause[3]} -{i*clause[1]} 0\n") #(bV-x)
-                    self.fcnf.write(f"-{i*clause[2]} -{i*clause[3]} {i*clause[1]} 0\n") # (-aV-bVx)
+                    self.fcnf.write(f"{clause[2]+ i*numberOfactualVar} -{clause[1]+ i*numberOfactualVar} 0\n") #(aV-x)
+                    self.fcnf.write(f"{clause[3]+ i*numberOfactualVar} -{clause[1]+ i*numberOfactualVar} 0\n") #(bV-x)
+                    self.fcnf.write(f"-{clause[2]+ i*numberOfactualVar} -{clause[3]+ i*numberOfactualVar} {clause[1]+ i*numberOfactualVar} 0\n") # (-aV-bVx)
                 if clause[0] == "not":
                     self.fcnf.write("c The INV gate ...\n")
-                    self.fcnf.write(f"-{i*clause[2]} -{i*clause[1]} 0\n") #(-aV-x)
-                    self.fcnf.write(f"{i*clause[2]} {i*clause[1]} 0\n") #(aVx)
+                    self.fcnf.write(f"-{clause[2]+ i*numberOfactualVar} -{clause[1]+ i*numberOfactualVar} 0\n") #(-aV-x)
+                    self.fcnf.write(f"{clause[2]+ i*numberOfactualVar} {clause[1]+ i*numberOfactualVar} 0\n") #(aVx)
+                if clause[0]=="N":
+                        clause[1] = clause[1]+ i*numberOfactualVar
             i +=1
         self.fcnf.write("c The Target State...\n")
         for clause in clauses:
-            if clause[0]=="N":
-                if clause[2] == 0:
-                    self.fcnf.write(f"-{roll*clause[1]} 0\n")
-                if clause[2] == 1:
-                    self.fcnf.write(f"{roll*clause[1]} 0\n")
+                if clause[0]=="N":
+                    if clause[2] == 0:
+                        self.fcnf.write(f"-{clause[1] } 0\n")
+                    if clause[2] == 1:
+                        self.fcnf.write(f"{clause[1]} 0\n")
+    def writeTransition(self,sArray,NSArray,roll=1):
+        numberOfactualVar = self.numberOfVariables -1
+        i=1
+        if roll > 1:
+            self.fcnf.write("c Defining Transition relation\n")
+            while i<=(roll):
+                for KeyS in sArray:
+                    for KeyN in NSArray:
+                        if KeyN[len(KeyN)-1] == KeyS[len(KeyS)-1] and KeyN[0] == "N":
+                            #print(f" {NSArray[KeyN] } {sArray[KeyS]+ i*numberOfactualVar}")
+                            self.fcnf.write(f"-{NSArray[KeyN]} {sArray[KeyS]+ i*numberOfactualVar} 0\n")
+                            self.fcnf.write(f"{NSArray[KeyN]} -{sArray[KeyS]+ i*numberOfactualVar} 0\n")
+                            NSArray[KeyN] = numberOfactualVar + NSArray[KeyN]
+                            break
+                i+=1
+        else:
+            return
+
         
