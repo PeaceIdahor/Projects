@@ -1,14 +1,15 @@
 import sys
 from functions import verilogFuncs
 from functions import prepareCnf
-"""
+import os
+
 f = sys.argv[1]
 target= sys.argv[3]
 roll = int(sys.argv[2])
-"""
-target = "10"
-roll = 1
-print(roll)
+
+#target = "00"
+#roll = 2
+
 targetState = []
 for bit in reversed(target):
 	targetState.append(bit)
@@ -16,101 +17,132 @@ inputs = []
 regs = []
 outputs = []
 wires = []
-wordArrsave = verilogFuncs.parser("ex1.v")
-cnfFile = open("example1.dimacs","a")
+wordArrsave = verilogFuncs.parser(f)
+cnfFile = open("example1.dimacs","w")
 numberOfClauses = 0
 numberOfVariables = 0
 clauses = []
+inputs = []
+outputs = []
+savedPS = []
+savedNS = []
+
+def initialize(varsDict,count,numC,numPS,roll):
+	#cnfFile.write(f"p cnf {count} {(numC*roll)  +numPS + len(target)}\n")
+	cnfFile.write("c initializing present state to 0 .......................................\n")
+	for key in varsDict:
+		if key[0]== "S":
+			cnfFile.write(f"-{varsDict[key]} 0 \n")
+def andGate(varsDict,clause,roll):
+	for key in varsDict:
+		for index,item in enumerate(clause):
+			if key == item:
+				clause[index] = varsDict[key]
+	cnfFile.write(f"{clause[2] + (roll*count)} -{clause[1] +(roll*count)} 0\n")
+	cnfFile.write(f"{clause[3] + (roll*count)} -{clause[1] + (roll*count)} 0\n")
+	cnfFile.write(f"-{clause[2] + (roll*count)} -{clause[3] + (roll*count)} {clause[1]+ (roll*count)} 0\n")
+	return clause
+def notGate(varsDict,clause,roll):
+	for key in varsDict:
+		for index,item in enumerate(clause):
+			if key == item:
+				clause[index] = varsDict[key]
+	cnfFile.write(f"-{clause[2] + (roll*count)} -{clause[1] + (roll*count)} 0\n")
+	cnfFile.write(f"{clause[2] + (roll*count)} {clause[1] + (roll*count)} 0\n")
+	return clause
+def targetState(target,varsDict,roll):
+	cnfFile.write("c Target state ----------------------------\n")
+	target = target[::-1]
+	i = 0
+	while i<=len(target) -1:
+		for key in varsDict:
+			if key[0] =="S" and int(key[len(key)-1]) == i:
+				if target[i] == "0":
+					cnfFile.write(f"-{varsDict[key]+ ((roll-1)*count) } 0\n")
+					break
+				if target[i] =="1":
+					cnfFile.write(f"{varsDict[key]+ ((roll-1)*count)} 0\n")
+		i+=1
+
+
 for index,word in enumerate(wordArrsave):
 	if word =="//": #checking to see if part of the code was commented 
 		while wordArrsave[index] !=";":
 			wordArrsave.pop(index)
 	rightSide=[]
-	if word == "reg": # the only part I care about are the assign statement
-		index2 = index+1
-		while wordArrsave[index2] != ";": #getting the rightside of the assign statement
-			regs.append(wordArrsave[index2])
-			index2 +=1
-	elif word == "input":
-		index2 = index +1
-		while wordArrsave[index2] != ";": #getting the rightside of the assign statement
-			inputs.append(wordArrsave[index2])
-			index2 +=1
-	elif word == "output":
-		index2 = index +1
-		while wordArrsave[index2] != ";": #getting the rightside of the assign statement
-			outputs.append(wordArrsave[index2])
-			index2 +=1
-
-	elif word == "wire":
-		index2 = index +1
-		while wordArrsave[index2] != ";": #getting the rightside of the assign statement
-			wires.append(wordArrsave[index2])
-			index2 +=1
-	elif word == "and" or word=="not":
+	if word == "and" or word=="not":
 		if word=="and":
 			output1 = wordArrsave[index+2]
 			input1 = wordArrsave[index+3]
 			input2 = wordArrsave[index+4]
 			clauses.append(["And",output1,input1,input2])
+			if input1 not in inputs:
+				inputs.append(input1)
+			if input2 not in inputs:
+				inputs.append(input2)
+			if output1 not in outputs:
+				outputs.append(output1)
 		if word=="not":
 			output1 = wordArrsave[index+2]
 			input1 = wordArrsave[index+3]
 			clauses.append(["not",output1,input1])
+			if input1 not in inputs:
+				inputs.append(input1)
+			if output1 not in outputs:
+				outputs.append(output1)
+varsDict = {}
+count = 1
+varsA = inputs + outputs
+my_set = set(varsA)
+varsA = list(my_set)
 
-inputsDict = {}
-regsDict = {}
-outputsDict = {}
-wiresDict = {}
 
-cnfVar = 0
-for item in inputs:
-	inputsDict[item] = cnfVar
-	cnfVar +=1
-	numberOfVariables +=1
-for item in regs:
-	regsDict[item] = cnfVar
-	cnfVar +=1
-	numberOfVariables +=1
-for item in wires:
-	wiresDict[item] = cnfVar
-	cnfVar +=1
-	numberOfVariables +=1
-for item in outputs:
-	outputsDict[item] = cnfVar
-	cnfVar +=1
-	numberOfVariables +=1
-#print(inputsDict)
-#print(regsDict)
-#print(outputsDict)
-#print(wiresDict)
-#print(wordArrsave)
-for arrays in clauses:
-	numberOfClauses +=1
-for index,clause in enumerate(clauses):
-	for index2,item in enumerate(clause):
-		for key in inputsDict:
-			if key == item:
-				clauses[index][index2] = inputsDict[key]
-				break
-		for key in regsDict:
-			if key == item:
-				clauses[index][index2] = regsDict[key]
-				break
-		for key in outputsDict:
-			if key == item:
-				clauses[index][index2] = outputsDict[key]
-				break
-		for key in wiresDict:
-			if key == item:
-				clauses[index][index2] = wiresDict[key]
-				if key[0] == "N":
-					index3 = int(key[len(key)-1])
-					clauses.append(["N",wiresDict[key],int(targetState[index3])])
-print(clauses)
+for item in varsA:
+	varsDict[item] = count
+	count +=1
+count = count -1
+numC=0
+for item in clauses:
+	if item[0] == "And":
+		numC +=3
+	if item[0] == "not":
+		numC+=2
+numPS = 0
+for key in varsDict:
+	if key[0] == "S":
+		numPS +=1
 
-justAVar = prepareCnf(cnfFile)
-justAVar.openDot(numberOfVariables,numberOfClauses,regsDict,roll)
+initialize(varsDict,count,numC,numPS,roll)
+i = 0
+while i<(roll):
+	cnfFile.write(f"c Rolling number {i+1}------------------------\n")
+	for index,clause in enumerate(clauses):
+		if clause[0] == "And":
+			cnfFile.write("c And Gate....................................\n")
+			clauses[index] = andGate(varsDict,clause,i)
+		if clause[0] == "not":
+			cnfFile.write("c not Gate....................................\n")
+			notGate(varsDict,clause,i)
+	i +=1
+targetState(target,varsDict,roll)
 
-justAVar.write(clauses,int(roll))
-justAVar.writeTransition(regsDict,wiresDict,roll)
+relation = []
+for key1 in varsDict:
+    for key2 in varsDict:
+        if key1[0] == "S" and key2[0] =="N":
+            if key1[-1] == key2[-1]:
+                relation.append([varsDict[key2],varsDict[key1]])
+i = 0
+print(varsDict)
+cnfFile.write("c Transitions -------------------------------------------------\n")
+while i<(roll-1):
+	for item in relation:
+		cnfFile.write(f"-{item[0] + i*count} {item[1] + (i+1)*count} 0\n ")
+		cnfFile.write(f"{item[0] + i*count} -{item[1] + (i+1)*count} 0\n ")
+	i +=1
+
+
+
+cnfFile.close()
+cmd = 'minisat example1.dimacs output.txt'
+os.system(cmd)
