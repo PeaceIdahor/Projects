@@ -1,14 +1,11 @@
-import sys
-from functions import verilogFuncs
-from functions import prepareCnf
 import os
-
+import sys
 f = sys.argv[1]
 target= sys.argv[3]
 roll = int(sys.argv[2])
 
-#target = "00"
-#roll = 2
+#target = "0011"
+#roll = 10
 
 targetState = []
 for bit in reversed(target):
@@ -17,7 +14,45 @@ inputs = []
 regs = []
 outputs = []
 wires = []
-wordArrsave = verilogFuncs.parser(f)
+def  parser(file): #function to parse the verilog file to create a word array
+
+        wordArr = [] #an array of characters that appear in sequence
+        wordArrsave = []
+        count = 0
+        index = 0
+        with open(file, 'r') as f:
+            for line in f:
+                for word in line:
+                    if word == ' ' or word == '\n' or word == '	' or word==',' or word=="(" or word==")": #creating a line of demarkation to seperate characters in sequence
+                        command = ''.join(wordArr) #joining those characters into a str word that represents some kind of command
+                        check = 0
+                        if ';' in command and len(command)>1:
+                            check =1
+                            if command in wordArrsave:
+                                wordArrsave.remove(command)
+                                index -=1
+                            command = command.replace(';',"")
+                            wordArrsave.append(command)
+                            if wordArrsave[index-1] !=None and wordArrsave[index-1] == ")":
+                                wordArrsave[index] = ")"
+                                wordArrsave[index-1]=command
+                            index+=1
+                            wordArrsave.append(';')
+                            index+=1
+                        if check == 0:
+                            wordArrsave.append(command) #appending that command to my list of words that I will refer back to later
+                            index +=1
+                        wordArr = []
+                        count +=1
+                    else:
+                        wordArr.append(word)
+
+        #-----------------------Preparing the command array to leave only relevant information from the verilog file ----------------------------------------
+        while '' in wordArrsave: #removing empty strings from the list
+            wordArrsave.remove('')
+        return wordArrsave
+
+wordArrsave = parser(f)
 cnfFile = open("example1.dimacs","w")
 numberOfClauses = 0
 numberOfVariables = 0
@@ -55,13 +90,14 @@ def targetState(target,varsDict,roll):
 	target = target[::-1]
 	i = 0
 	while i<=len(target) -1:
-		for key in varsDict:
-			if key[0] =="S" and int(key[len(key)-1]) == i:
-				if target[i] == "0":
-					cnfFile.write(f"-{varsDict[key]+ ((roll-1)*count) } 0\n")
-					break
-				if target[i] =="1":
-					cnfFile.write(f"{varsDict[key]+ ((roll-1)*count)} 0\n")
+		for key in varsDict: 
+			if len(key) <=3:
+				if key[0] =="S" and int(key[len(key)-1]) == i:
+					if target[i] == "0":
+						cnfFile.write(f"-{varsDict[key]+ ((roll-1)*count) } 0\n")
+						break
+					if target[i] =="1":
+						cnfFile.write(f"{varsDict[key]+ ((roll-1)*count)} 0\n")
 		i+=1
 
 
