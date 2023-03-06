@@ -1,11 +1,12 @@
 import os
 import sys
+
 f = sys.argv[1]
 target= sys.argv[3]
 roll = int(sys.argv[2])
 
-#target = "0011"
-#roll = 10
+#target = "11"
+#roll = 1
 
 targetState = []
 for bit in reversed(target):
@@ -63,10 +64,10 @@ savedPS = []
 savedNS = []
 
 def initialize(varsDict,count,numC,numPS,roll):
-	#cnfFile.write(f"p cnf {count} {(numC*roll)  +numPS + len(target)}\n")
+	cnfFile.write(f"p cnf {count} {(numC*roll)  +numPS + len(target) + 2*roll}\n")
 	cnfFile.write("c initializing present state to 0 .......................................\n")
 	for key in varsDict:
-		if key[0]== "S":
+		if key[0]== "S" and len(key)<3:
 			cnfFile.write(f"-{varsDict[key]} 0 \n")
 def andGate(varsDict,clause,roll):
 	for key in varsDict:
@@ -91,8 +92,8 @@ def targetState(target,varsDict,roll):
 	i = 0
 	while i<=len(target) -1:
 		for key in varsDict: 
-			if len(key) <=3:
-				if key[0] =="S" and int(key[len(key)-1]) == i:
+			if len(key) <=4:
+				if key[0] =="N" and int(key[len(key)-1]) == i:
 					if target[i] == "0":
 						cnfFile.write(f"-{varsDict[key]+ ((roll-1)*count) } 0\n")
 						break
@@ -100,39 +101,28 @@ def targetState(target,varsDict,roll):
 						cnfFile.write(f"{varsDict[key]+ ((roll-1)*count)} 0\n")
 		i+=1
 
-
+varsA = []
 for index,word in enumerate(wordArrsave):
 	if word =="//": #checking to see if part of the code was commented 
 		while wordArrsave[index] !=";":
 			wordArrsave.pop(index)
-	rightSide=[]
-	if word == "and" or word=="not":
-		if word=="and":
-			output1 = wordArrsave[index+2]
-			input1 = wordArrsave[index+3]
-			input2 = wordArrsave[index+4]
-			clauses.append(["And",output1,input1,input2])
-			if input1 not in inputs:
-				inputs.append(input1)
-			if input2 not in inputs:
-				inputs.append(input2)
-			if output1 not in outputs:
-				outputs.append(output1)
-		if word=="not":
-			output1 = wordArrsave[index+2]
-			input1 = wordArrsave[index+3]
-			clauses.append(["not",output1,input1])
-			if input1 not in inputs:
-				inputs.append(input1)
-			if output1 not in outputs:
-				outputs.append(output1)
+	if word == "input" or word=="output" or word =="wire" or word =="reg":
+		index2 = index +1
+		while wordArrsave[index2] != ";":
+			varsA.append(wordArrsave[index2])
+			index2 +=1
+	if word=="and":
+		output1 = wordArrsave[index+2]
+		input1 = wordArrsave[index+3]
+		input2 = wordArrsave[index+4]
+		clauses.append(["And",output1,input1,input2])
+	if word=="not":
+		output1 = wordArrsave[index+2]
+		input1 = wordArrsave[index+3]
+		clauses.append(["not",output1,input1])
 varsDict = {}
 count = 1
-varsA = inputs + outputs
-my_set = set(varsA)
-varsA = list(my_set)
-
-
+varsA.remove("clock")
 for item in varsA:
 	varsDict[item] = count
 	count +=1
@@ -145,10 +135,10 @@ for item in clauses:
 		numC+=2
 numPS = 0
 for key in varsDict:
-	if key[0] == "S":
+	if len(key)<3 and key[0] == "S":
 		numPS +=1
-
-initialize(varsDict,count,numC,numPS,roll)
+print(clauses)
+initialize(varsDict,len(varsA),numC,numPS,roll)
 i = 0
 while i<(roll):
 	cnfFile.write(f"c Rolling number {i+1}------------------------\n")
@@ -169,7 +159,6 @@ for key1 in varsDict:
             if key1[-1] == key2[-1]:
                 relation.append([varsDict[key2],varsDict[key1]])
 i = 0
-print(varsDict)
 cnfFile.write("c Transitions -------------------------------------------------\n")
 while i<(roll-1):
 	for item in relation:
@@ -177,8 +166,7 @@ while i<(roll-1):
 		cnfFile.write(f"{item[0] + i*count} -{item[1] + (i+1)*count} 0\n ")
 	i +=1
 
-
-
 cnfFile.close()
+print(varsDict)
 cmd = 'minisat example1.dimacs output.txt'
 os.system(cmd)
