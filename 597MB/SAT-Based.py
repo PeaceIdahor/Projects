@@ -6,8 +6,9 @@ target= sys.argv[3]
 roll = int(sys.argv[2])
 
 #target = "11"
-#roll = 1
-
+#roll = 2
+SArray =["S" + str(i) for i in range(32)]
+NSArray = ["NS" + str(i) for i in range(32)]
 targetState = []
 for bit in reversed(target):
 	targetState.append(bit)
@@ -65,9 +66,9 @@ savedNS = []
 
 def initialize(varsDict,count,numC,numPS,roll):
 	cnfFile.write(f"p cnf {count} {(numC*roll)  +numPS + len(target) + 2*roll}\n")
-	cnfFile.write("c initializing present state to 0 .......................................\n")
+	cnfFile.write("c initializing present state to 0 .......................................--------------------------------\n")
 	for key in varsDict:
-		if key[0]== "S" and len(key)<3:
+		if key in SArray:
 			cnfFile.write(f"-{varsDict[key]} 0 \n")
 def andGate(varsDict,clause,roll):
 	for key in varsDict:
@@ -92,13 +93,13 @@ def targetState(target,varsDict,roll):
 	i = 0
 	while i<=len(target) -1:
 		for key in varsDict: 
-			if len(key) <=4:
-				if key[0] =="N" and int(key[len(key)-1]) == i:
-					if target[i] == "0":
-						cnfFile.write(f"-{varsDict[key]+ ((roll-1)*count) } 0\n")
-						break
-					if target[i] =="1":
-						cnfFile.write(f"{varsDict[key]+ ((roll-1)*count)} 0\n")
+			if key in NSArray and int(key[2:]) == i:
+				if target[i] == "0":
+					cnfFile.write(f"-{varsDict[key]+ ((roll-1)*count) } 0\n")
+					break
+				if target[i] =="1":
+					cnfFile.write(f"{varsDict[key]+ ((roll-1)*count)} 0\n")
+					break
 		i+=1
 
 varsA = []
@@ -126,7 +127,7 @@ varsA.remove("clock")
 for item in varsA:
 	varsDict[item] = count
 	count +=1
-count = count -1
+count = len(varsA)
 numC=0
 for item in clauses:
 	if item[0] == "And":
@@ -135,13 +136,12 @@ for item in clauses:
 		numC+=2
 numPS = 0
 for key in varsDict:
-	if len(key)<3 and key[0] == "S":
+	if key in SArray:
 		numPS +=1
-print(clauses)
 initialize(varsDict,len(varsA),numC,numPS,roll)
 i = 0
 while i<(roll):
-	cnfFile.write(f"c Rolling number {i+1}------------------------\n")
+	cnfFile.write(f"c Rolling number {i+1}------------------------------------------------------------------------------------\n")
 	for index,clause in enumerate(clauses):
 		if clause[0] == "And":
 			cnfFile.write("c And Gate....................................\n")
@@ -155,18 +155,16 @@ targetState(target,varsDict,roll)
 relation = []
 for key1 in varsDict:
     for key2 in varsDict:
-        if key1[0] == "S" and key2[0] =="N":
-            if key1[-1] == key2[-1]:
+        if key1 in SArray and key2 in NSArray:
+            if key1[1:] == key2[2:]:
                 relation.append([varsDict[key2],varsDict[key1]])
 i = 0
-cnfFile.write("c Transitions -------------------------------------------------\n")
+cnfFile.write("c Transitions ------------------------------------------------------------------------------------------------\n")
 while i<(roll-1):
 	for item in relation:
 		cnfFile.write(f"-{item[0] + i*count} {item[1] + (i+1)*count} 0\n ")
 		cnfFile.write(f"{item[0] + i*count} -{item[1] + (i+1)*count} 0\n ")
 	i +=1
-
 cnfFile.close()
-print(varsDict)
-cmd = 'minisat example1.dimacs output.txt'
+cmd = 'time minisat example1.dimacs output.txt'
 os.system(cmd)
