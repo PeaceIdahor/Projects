@@ -185,7 +185,7 @@ class prepareDot:
         if label == "":
             self.fDot.write(f'"{inN}" -> "{outN}" \n')
         else:
-            self.fDot.write(f'"{inN}" -> "{outN}" [label="{label}"] [color="red"]\n')
+            self.fDot.write(f'"{inN}" -> "{outN}" [label="{label}",fontcolor=red,fontweight=bolder]\n')
     def createSubgraph(self,input):
         self.fDot.write("subgraph{\nrand=same;")
         for item in input:
