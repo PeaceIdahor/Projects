@@ -121,7 +121,7 @@ class verilogFuncs:
                 if items not in bufferA:
                     dotfile.writeNode(items,"invtriangle")
         for index,arrays in enumerate(operationsA):
-            for items in arrays[1]:
+            for index2, items in enumerate(arrays[1]):
                 if items in bufferA:
                     for itemx in operationsA:
                         if itemx[2] == items:
@@ -140,7 +140,7 @@ class verilogFuncs:
                 else:
                     if f"{items[0],arrays[0]}" not in savedArr and inputon==1:
                         savedArr.append(f"{items[0],arrays[0]}")
-                        dotfile.writeEdgeNode(items,arrays[0],operationsA[index][3][operationsA[index][1].index(items)])
+                        dotfile.writeEdgeNode(items,arrays[0],operationsA[index][3][index2])
                     elif f"{items[0],arrays[0]}" not in savedArr and inputon==0:
                         savedArr.append(f"{items[0],arrays[0]}")
                         dotfile.writeEdgeNode(items,arrays[0])
@@ -216,19 +216,17 @@ class prepareDot:
 class simulationInput:
 
     def and_gate(a, b):
-        return int(a and b)
+        return str(int(a)&int(b))
     def not_gate(a):
-        return int(not a)
+        return str(int(not int(a)))
     def nor_gate(a, b):
-        return int(not (a or b))
+        return str(int(not int(a) | int(b)))
     def xor_gate(a, b):
-        return int(a != b)
-    def xnor_gate(a, b):
-        return int(a == b)
+        return str(int(a) ^ int(b))
     def nand_gate(a, b):
-        return int(not (a and b))
+        return str(int(not int(a)&int(b)))
     def or_gate(a, b):
-        return int(a or b)
+        return str(int(a) | int(b))
 
 
 
