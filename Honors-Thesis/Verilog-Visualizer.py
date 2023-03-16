@@ -1,10 +1,13 @@
 from functions import verilogFuncs
 from functions import prepareDot,simulationInput
 import sys
-#f = sys.argv[1]
-wordArrsave = verilogFuncs.parser("f2-aig.v") #extracting important information from my verilog file
-dotFile = open("Translate.dot","a")
+"""
+f = sys.argv[1]
+wordArrsave = verilogFuncs.parser(f) #extracting important information from my verilog file
+"""
 
+wordArrsave = verilogFuncs.parser("f2-aig.v")
+dotFile = open("Translate.dot","a")
 dotfile = prepareDot(dotFile)
 dotfile.openDot()#opening a dot file
 
@@ -150,6 +153,7 @@ def returnOut(Array,indexMaster,outputE,outputN=""):
 			return operationin,Array,out	
 		if "~" in Array:
 			operationin = "not" + f"_{indexMaster}"
+			indexMaster +=1
 			indexV = Array[Array.index("~")+1]
 			Arrayin = [indexV]
 			out= "~" + f"{indexV}"
@@ -287,7 +291,6 @@ elif specifyInputs == "n" or specifyInputs == "N":
 	inputon = 0
 else:
 	raise Exception("Sorry Y or N only")
-
 def simulation(operationsA, inputSpecifiedArray):
 	for index1,items in enumerate(operationsA):
 		operationsA[index1].append([])
@@ -309,6 +312,16 @@ dotfile.setup(inputA,bufferA,outputA)
 verilogFuncs.processVisual(bufferA,operationsA,inputA)
 if inputon ==1:
 	simulation(operationsA,inputSpecifiedArray)
+operationsDict = {}
+"""
+for index,arrays in enumerate(operationsA):
+	if operationsA[index][0] in operationsDict:
+		operationsA.pop(index)
+	operationsDict[operationsA[index][0]] = 0
+	"""
+for arrays in operationsA:
+	if arrays[0][0] == "n":
+		print(arrays)
 verilogFuncs.writeVisuals(dotFile,operationsA,bufferA,labelon,inputon)
 dotfile.endFile() #closing the dotfile
 
