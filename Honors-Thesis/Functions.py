@@ -157,27 +157,24 @@ class prepareDot:
     def openDot(self):
         self.fDot.truncate(0)
         self.fDot.write("digraph test{\n")
-    def setup(self,inputA,bufferA,outputA): #function to prepare dot file
+    def setup(self,rankDict): #function to prepare dot file
         #fDot.write('splines="ortho"\n')
-        self.fDot.write('subgraph inputs{ rank="same"')
-        for item in inputA:
-            if item not in bufferA:
-                if "(" in item:
-                    item = item.replace("(","")
-                if ")" in item:
-                    item = item.replace(")","")
-                self.fDot.write(f' "{item}" ')
-        self.fDot.write('}\n')
-
-        self.fDot.write('subgraph outputs{rank="same"')
-        for item in outputA:
-            if item not in bufferA:
-                if "(" in item:
-                    item = item.replace("(","")
-                if ")" in item:
-                    item = item.replace(")","")
-                self.fDot.write(f' "{item}" ')
-        self.fDot.write('}\n')
+        for key in rankDict:
+            if key ==1:
+                self.fDot.write('subgraph inputs{ rank="same"')
+                for item in rankDict[key]:
+                    self.fDot.write(f' "{item}" ')
+                self.fDot.write('}\n')
+            elif key == max(rankDict):
+                self.fDot.write('subgraph outputs{rank="same"')
+                for item in rankDict[key]:
+                    self.fDot.write(f' "{item}" ')
+                self.fDot.write('}\n')
+            else:
+                self.fDot.write(f'subgraph Rank{key}{{rank="same"')
+                for item in rankDict[key]:
+                    self.fDot.write(f' "{item[0]}" ')
+                self.fDot.write('}\n')
     def writeNode(self,inN,shape):
         self.fDot.write(f'"{inN}" [shape={shape}]\n')
 
