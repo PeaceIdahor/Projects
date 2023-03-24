@@ -1,12 +1,11 @@
 from functions import verilogFuncs
 from functions import prepareDot,simulationInput
 import sys
-"""
 f = sys.argv[1]
 wordArrsave = verilogFuncs.parser(f) #extracting important information from my verilog file
-"""
 
-wordArrsave = verilogFuncs.parser("f2-aig.v")
+
+#wordArrsave = verilogFuncs.parser("f2-aig.v")
 dotFile = open("Translate.dot","a")
 dotfile = prepareDot(dotFile)
 dotfile.openDot()#opening a dot file
@@ -265,6 +264,7 @@ for index,word in enumerate(wordArrsave):
 		#returnOut(Array,indexMaster)
 
 #checking to see if the visual representation is in debug mode or not
+print(inputA)
 val = input("Debug mode on ? [y/n] :")
 
 if val == "y" or val == "Y":
@@ -307,7 +307,56 @@ def simulation(operationsA, inputSpecifiedArray):
 						inputSpecifiedArray[operationsA[index1][2]] = simulationInput.not_gate(operationsA[index1][3][0])
 						operationsA[index1][4].append(inputSpecifiedArray[operationsA[index1][2]])
 						break
-dotfile.setup(inputA,bufferA,outputA)
+rankDict = {}
+OutputRank = {}
+Rank = 1
+for item in inputA:
+	if item not in bufferA and Rank not in rankDict:
+		rankDict[Rank] = [item]
+	elif item not in bufferA and item not in rankDict[Rank]:
+		rankDict[Rank].append(item)
+	elif item not in bufferA and item in rankDict[Rank]:
+		# do nothing since the item is already in the list for the current rank
+		pass
+	else:
+		pass
+
+for arrays in operationsA:
+	rankDictCp = rankDict.copy()
+	if len(arrays[1])==1:
+		for key, value in rankDictCp.items():
+			if arrays[1][0] in value and key+1 not in rankDictCp:
+				rankDict[key+1] = []
+				OutputRank[key+1] = []
+				rankDict[key+1].append(arrays)
+				OutputRank[key+1].append(arrays[2])
+			elif arrays[1][0] in value and key+1 in rankDictCp:
+				rankDict[key+1].append(arrays)
+				OutputRank[key+1].append(arrays[2])
+	if len(arrays[1])>1:
+		for key, value in rankDictCp.items():
+			if arrays[1][0] in value and arrays[1][1] in value:
+				if key+1 in rankDictCp:
+					rankDict[key+1].append(arrays)
+					OutputRank[key+1].append(arrays[2])
+				else:
+					rankDict[key+1] = []
+					OutputRank[key+1] = []
+					rankDict[key+1].append(arrays)
+					OutputRank[key+1].append(arrays[2])
+Rank = max(rankDict) +1
+for item in outputA:
+	if item not in bufferA and Rank not in rankDict:
+		rankDict[Rank] = [item]
+	elif item not in bufferA and item not in rankDict[Rank]:
+		rankDict[Rank].append(item)
+	elif item not in bufferA and item in rankDict[Rank]:
+		# do nothing since the item is already in the list for the current rank
+		pass
+	else:
+		pass
+
+dotfile.setup(rankDict)
 #calling the visual representation functions that write to the dot file
 verilogFuncs.processVisual(bufferA,operationsA,inputA)
 if inputon ==1:
@@ -319,9 +368,10 @@ for index,arrays in enumerate(operationsA):
 		operationsA.pop(index)
 	operationsDict[operationsA[index][0]] = 0
 	"""
-for arrays in operationsA:
-	if arrays[0][0] == "n":
-		print(arrays)
+
+
+print(rankDict)
+print(OutputRank)
 verilogFuncs.writeVisuals(dotFile,operationsA,bufferA,labelon,inputon)
 dotfile.endFile() #closing the dotfile
 
