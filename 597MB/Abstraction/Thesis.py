@@ -1,17 +1,17 @@
 import os
 import sys
-from thesisfunctions import verilogFuncs, prepareDot
+from thesisfunctions import verilogFuncs, prepareDot,simulationInput
 import re 
-#lib = sys.argv[1]
-#f = sys.argv[2]
+lib = sys.argv[1]
+f = sys.argv[2]
 inputs = []
 regs = []
 outputs = []
 wires = []
 
 
-wordArrsave = verilogFuncs.parser("f2-aig-gate.v")
-wordArrsave2 = verilogFuncs.parser2("mylib.genlib")
+wordArrsave = verilogFuncs.parser(f)
+wordArrsave2 = verilogFuncs.parser2(lib)
 dotFile = open("Translate.dot","a")
 dotfile = prepareDot(dotFile)
 dotfile.openDot()#opening a dot file
@@ -27,33 +27,39 @@ varsA = []
 operationsA = []
 notDict = []
 notTrack = {}
+inputPrimary = []
 for index,word in enumerate(wordArrsave2):
-    if word == "GATE":
-        libDict[wordArrsave2[index+1]] = wordArrsave2[index+3]
+	if word == "GATE":
+		libDict[wordArrsave2[index+1]] = wordArrsave2[index+3]
 for index, word in enumerate(wordArrsave):
-    if word == "//": # checking to see if part of the code was commented 
-        while wordArrsave[index] != ";":
-            wordArrsave.pop(index)
-    if word == "input" or word == "output" or word == "wire" or word == "reg":
-        index2 = index + 1
-        while wordArrsave[index2] != ";":
-            varsA.append(wordArrsave[index2])
-            index2 += 1
-    for key in libDict:
-        if key == word:
-            line = []
-            index2 = index
-            while wordArrsave[index2] != ";":
-                if '.' in wordArrsave[index2]:
-                    varDict[wordArrsave[index2] + f'/{index}'] = wordArrsave[index2+1]
-                else:
-                    line.append(wordArrsave[index2])
-                index2 +=1
-            for item in line[2:-1]:
-                inputA.append(item)
-            outputA.append(line[len(line)-1])
-            name = line[0]+f'/{index}'
-            clauses.append([name,line[2:-1],line[len(line)-1]])
+	if word == "//": # checking to see if part of the code was commented 
+		while wordArrsave[index] != ";":
+			wordArrsave.pop(index)
+	if word == "input" or word == "output" or word == "wire" or word == "reg":
+		index2 = index + 1
+		while wordArrsave[index2] != ";":
+			varsA.append(wordArrsave[index2])
+			index2 += 1
+	if word == "input":
+		indexInput = index +1
+		while wordArrsave[indexInput] != ";":
+			inputPrimary.append(wordArrsave[indexInput])
+			indexInput +=1
+	for key in libDict:
+		if key == word:
+			line = []
+			index2 = index
+			while wordArrsave[index2] != ";":
+				if '.' in wordArrsave[index2]:
+					varDict[wordArrsave[index2] + f'/{index}'] = wordArrsave[index2+1]
+				else:
+					line.append(wordArrsave[index2])
+				index2 +=1
+			for item in line[2:-1]:
+				inputA.append(item)
+			outputA.append(line[len(line)-1])
+			name = line[0]+f'/{index}'
+			clauses.append([name,line[2:-1],line[len(line)-1]])
 
 val = input("High Abstraction on ? [y/n] :")
 if val == "y" or val == "Y":
@@ -266,48 +272,121 @@ def returnOut(Array,indexMaster,outputE,outputN=""):
 				operationsA.append([operationin,Array,out])
 			return operationin,Array,out
 def returnOutB(array):
-    operation = array[0].split('/')[0]
-    operationIndex = array[0].split('/')[1]
-    for key in libDict:
-        if key == operation:
-            expr = libDict[key]
-            expr = expr.replace('*', '&').replace('+', '|').replace('!', '~')
-            expr = expr[2:]
-            for i in range(len(expr)-1):
-                if expr[i] == "|" or expr[i] =="&" or expr[i] == "^" :
-                    if (expr[i-2] !="(" or expr[i+2] != ")") and 2+i != len(expr)-1:
-                        exprlist = re.findall(r'\(|\)|[~&\|]|[\w_]+',expr)
-                        exprlist.insert(i-1,"(")
-                        exprlist.insert(i+3,")")
-                        expr = ''.join(exprlist)
-            for item in array[1]:
-                for key in varDict:
-                    if key.split("/")[1] == operationIndex:
-                        if varDict[key] == item:
-                            key = key.split("/")[0]
-                            expr = expr.replace(key[1:],item)
-    outputE = strip(list(expr))
-    outputN = array[2]
-    exprinput = re.findall(r'\(|\)|[~&\|]|[\w_]+',expr)
-    returnOut(exprinput,int(operationIndex),outputE,outputN)
-    return
-if Abst == 1:
-    for array in clauses:
-        for item in array[1]:
-            if item in outputA:
-                bufferA.append(item)
-    dotfile.setup(inputA,bufferA,outputA)
-    verilogFuncs.processVisual(bufferA,clauses,inputA)
+	operation = array[0].split('/')[0]
+	operationIndex = array[0].split('/')[1]
+	for key in libDict:
+		if key == operation:
+			expr = libDict[key]
+			expr = expr.replace('*', '&').replace('+', '|').replace('!', '~')
+			expr = expr[2:]
+			for i in range(len(expr)-1):
+				if expr[i] == "|" or expr[i] =="&" or expr[i] == "^" :
+					if (expr[i-2] !="(" or expr[i+2] != ")") and 2+i != len(expr)-1:
+						exprlist = re.findall(r'\(|\)|[~&\|]|[\w_]+',expr)
+						exprlist.insert(i-1,"(")
+						exprlist.insert(i+3,")")
+						expr = ''.join(exprlist)
+			for item in array[1]:
+				for key in varDict:
+					if key.split("/")[1] == operationIndex:
+						if varDict[key] == item:
+							key = key.split("/")[0]
+							expr = expr.replace(key[1:],item)
+	outputE = strip(list(expr))
+	outputN = array[2]
+	exprinput = re.findall(r'\(|\)|[~&\|]|[\w_]+',expr)
+	returnOut(exprinput,int(operationIndex),outputE,outputN)
+	return
+def simulation(operationsA, inputSpecifiedArray):
+	for index1,items in enumerate(operationsA):
+		operationsA[index1].append([])
+		operationsA[index1].append([])
+		for inputs in items[1]:
+			for key in inputSpecifiedArray:
+				if inputs == key:
+					operationsA[index1][3].append(inputSpecifiedArray[key])
+					if operationsA[index1][0][0] == "A" and len(operationsA[index1][3])>1:
+						inputSpecifiedArray[operationsA[index1][2]] = simulationInput.and_gate(operationsA[index1][3][0],operationsA[index1][3][1])
+						operationsA[index1][4].append(inputSpecifiedArray[operationsA[index1][2]])
+						break
+					if operationsA[index1][0][0] == "n":
+						inputSpecifiedArray[operationsA[index1][2]] = simulationInput.not_gate(operationsA[index1][3][0])
+						operationsA[index1][4].append(inputSpecifiedArray[operationsA[index1][2]])
+						break
+					if operationsA[index1][0][0] == "o" and len(operationsA[index1][3])>1:
+						inputSpecifiedArray[operationsA[index1][2]] = simulationInput.or_gate(operationsA[index1][3][0],operationsA[index1][3][1])
+						operationsA[index1][4].append(inputSpecifiedArray[operationsA[index1][2]])
+						break	
 
-    verilogFuncs.writeVisuals(dotFile,clauses,bufferA,0,0)
-    dotfile.endFile() #closing the dotfile
+if Abst == 1:
+	for array in clauses:
+		for item in array[1]:
+			if item in outputA:
+				bufferA.append(item)
+	dotfile.setup(inputA,bufferA,outputA)
+	verilogFuncs.processVisual(bufferA,clauses,inputA)
+	val = input("Debug mode on ? [y/n] :")
+
+	if val == "y" or val == "Y":
+		labelon = 1
+		print("Debug Mode on")
+	elif val == "n" or val == "N":
+		labelon=0
+		print("Debug Mode off")
+	else:
+		raise Exception("Sorry Y or N only")
+	inputSpecifiedArray = {}
+	specifyInputs = input("Specifying inputs? [y/n] :")
+	if specifyInputs == "y" or specifyInputs == "Y":
+		inputon = 1
+		for item in inputPrimary:
+			inputSpecified = input(f"{item}: ")
+			if inputSpecified =="0" or inputSpecified == "1":
+				inputSpecifiedArray[item] = inputSpecified
+			else:
+				raise Exception("Input must be 0 or 1")
+	elif specifyInputs == "n" or specifyInputs == "N":
+		inputon = 0
+	else:
+		raise Exception("Sorry Y or N only")
+	if inputon ==1:
+		simulation(operationsA,inputSpecifiedArray)
+	verilogFuncs.writeVisuals(dotFile,clauses,bufferA,labelon,inputon)
+	dotfile.endFile() #closing the dotfile
 else:
-    #print(libDict)
-    for array in clauses:
-        returnOutB(array)
-    dotfile.setup(inputA,bufferA,outputA)
-    verilogFuncs.processVisual(bufferA,operationsA,inputA)
-    verilogFuncs.writeVisuals(dotFile,operationsA,bufferA,0,0)
-    dotfile.endFile() #closing the dotfile
+	#print(libDict)
+	for array in clauses:
+		returnOutB(array)
+	dotfile.setup(inputA,bufferA,outputA)
+	verilogFuncs.processVisual(bufferA,operationsA,inputA)
+	val = input("Debug mode on ? [y/n] :")
+
+	if val == "y" or val == "Y":
+		labelon = 1
+		print("Debug Mode on")
+	elif val == "n" or val == "N":
+		labelon=0
+		print("Debug Mode off")
+	else:
+		raise Exception("Sorry Y or N only")
+	inputSpecifiedArray = {}
+	specifyInputs = input("Specifying inputs? [y/n] :")
+	if specifyInputs == "y" or specifyInputs == "Y":
+		inputon = 1
+		for item in inputPrimary:
+			inputSpecified = input(f"{item}: ")
+			if inputSpecified =="0" or inputSpecified == "1":
+				inputSpecifiedArray[item] = inputSpecified
+			else:
+				raise Exception("Input must be 0 or 1")
+	elif specifyInputs == "n" or specifyInputs == "N":
+		inputon = 0
+	else:
+		raise Exception("Sorry Y or N only")
+	if inputon ==1:
+		simulation(operationsA,inputSpecifiedArray)
+	print(operationsA)
+	verilogFuncs.writeVisuals(dotFile,operationsA,bufferA,labelon,inputon)
+	dotfile.endFile() #closing the dotfile
 
 #print(varDict)
