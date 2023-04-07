@@ -100,7 +100,10 @@ class verilogFuncs:
         savedArr = []
         dotfile = prepareDot(fDot)
         for arrays in operationsA:
-            dotfile.writeNode(arrays[0],"square")
+            if arrays[0][:3] == "inv" or arrays[0][:3] == "not":
+                dotfile.writeNode(arrays[0],"circle")
+            else:
+                dotfile.writeNode(arrays[0],"square")
             if arrays[2] not in bufferA:
                 dotfile.writeNode(arrays[2],"triangle")
             for items in arrays[1]:
@@ -166,7 +169,10 @@ class prepareDot:
                 self.fDot.write(f' "{item}" ')
         self.fDot.write('}\n')
     def writeNode(self,inN,shape):
-        self.fDot.write(f'"{inN}" [shape={shape}]\n')
+        if shape == "circle":
+            self.fDot.write(f'"{inN}" [shape={shape} fixedsize=true width = 0.7 height = 0.7]\n')
+        else:
+            self.fDot.write(f'"{inN}" [shape={shape}]\n')
 
     def writeEdgeNode(self,inN,outN="",label=""): 
         if label == "":
