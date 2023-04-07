@@ -367,7 +367,6 @@ if sys.argv[1]== 'G':
 				for index2, array2 in enumerate(operationsA):
 					for item in array1[1]:
 						if item in array2[1]:
-							print(item)
 							clauses[index1][3][array1[1].index(item)] = array2[3][array2[1].index(item)]
 		verilogFuncs.writeVisuals(dotFile,clauses,bufferA,labelon,inputon)
 		dotfile.endFile() #closing the dotfile
@@ -402,7 +401,6 @@ if sys.argv[1]== 'G':
 			raise Exception("Sorry Y or N only")
 		if inputon ==1:
 			simulation(operationsA,inputSpecifiedArray)
-			print(operationsA)
 		verilogFuncs.writeVisuals(dotFile,operationsA,bufferA,labelon,inputon)
 		dotfile.endFile() #closing the dotfile
 
