@@ -72,6 +72,93 @@ class verilogFuncs:
             while '' in wordArrsave: #removing empty strings from the list
                 wordArrsave.remove('')
             return wordArrsave   
+    def  parser3(file): #function to parse the verilog file to create a word array
+        wordArr = [] #an array of characters that appear in sequence
+        wordArrsave = []
+        count = 0
+        index = 0
+        with open(file, 'r') as f:
+            for line in f:
+                for word in line:
+                    if word == ' ' or word == '\n' or word == '	' or word==',': #creating a line of demarkation to seperate characters in sequence
+                        command = ''.join(wordArr) #joining those characters into a str word that represents some kind of command
+                        check = 0
+                        if "~" in command:
+                            check = 1
+                            if command in wordArrsave:
+                                wordArrsave.remove(command)
+                                index -=1
+                            command = command.replace('~',"")
+                            wordArrsave.append('~')
+                            index+=1
+                            wordArrsave.append(command)
+                            index+=1
+                        if '(' in command:
+                            check = 1
+                            if command in wordArrsave:
+                                wordArrsave.remove(command)
+                                index -=1
+                            command = command.replace('(',"")
+                            wordArrsave.append('(')
+                            index+=1
+                            wordArrsave.append(command)
+                            index+=1
+                        if '!' in command:
+                            check = 1
+                            if command in wordArrsave:
+                                wordArrsave.remove(command)
+                                index -=1
+                            command = command.replace('!',"")
+                            wordArrsave.append('!')
+                            index+=1
+                            wordArrsave.append(command)
+                            index+=1
+                        if '//' in command:
+                            check =1
+                            if command in wordArrsave:
+                                wordArrsave.remove(command)
+                                index -=1
+                            command = command.replace('//',"")
+                            wordArrsave.append('//')
+                            index +=1
+                            wordArrsave.append(command)
+                            index +=1
+                        if ')' in command:
+                            check =1
+                            if command in wordArrsave:
+                                wordArrsave.remove(command)
+                                index -=1
+                            command = command.replace(')',"")
+                            wordArrsave.append(command)
+                            index +=1
+                            wordArrsave.append(')')
+                            index +=1
+                        if ';' in command:
+                            check =1
+                            if command in wordArrsave:
+                                wordArrsave.remove(command)
+                                index -=1
+                            command = command.replace(';',"")
+                            wordArrsave.append(command)
+                            if wordArrsave[index-1] !=None and wordArrsave[index-1] == ")":
+                                wordArrsave[index] = ")"
+                                wordArrsave[index-1]=command
+                            index+=1
+                            wordArrsave.append(';')
+                            index+=1
+
+                        if check == 0:
+                            wordArrsave.append(command) #appending that command to my list of words that I will refer back to later
+                            index +=1
+                        wordArr = []
+                        count +=1
+                    else:
+                        wordArr.append(word)
+
+        #-----------------------Preparing the command array to leave only relevant information from the verilog file ----------------------------------------
+        while '' in wordArrsave: #removing empty strings from the list
+            wordArrsave.remove('')
+        return wordArrsave
     def processVisual(bufferA,operationsA,inputA):
         for index,item in enumerate(bufferA):
             if "(" in item:
@@ -103,7 +190,7 @@ class verilogFuncs:
             if arrays[0][:3] == "inv" or arrays[0][:3] == "not":
                 dotfile.writeNode(arrays[0],"circle")
             else:
-                dotfile.writeNode(arrays[0],"square")
+                dotfile.writeNode(arrays[0],"oval")
             if arrays[2] not in bufferA:
                 dotfile.writeNode(arrays[2],"triangle")
             for items in arrays[1]:
@@ -140,7 +227,27 @@ class verilogFuncs:
                     dotfile.writeEdgeNode(arrays[0],arrays[2])
     def andGate(inputA,inputB):
         return str(int(inputA)*int(inputB))
-    
+    def simulation(operationsA, inputSpecifiedArray):
+        for index1,items in enumerate(operationsA):
+            operationsA[index1].append([])
+            operationsA[index1].append([])
+            for inputs in items[1]:
+                for key in inputSpecifiedArray:
+                    if inputs == key:
+                        operationsA[index1][3].append(inputSpecifiedArray[key])
+                        if operationsA[index1][0][0] == "A" and len(operationsA[index1][3])>1:
+                            inputSpecifiedArray[operationsA[index1][2]] = simulationInput.and_gate(operationsA[index1][3][0],operationsA[index1][3][1])
+                            operationsA[index1][4].append(inputSpecifiedArray[operationsA[index1][2]])
+                            break
+                        if operationsA[index1][0][0] == "n":
+                            inputSpecifiedArray[operationsA[index1][2]] = simulationInput.not_gate(operationsA[index1][3][0])
+                            operationsA[index1][4].append(inputSpecifiedArray[operationsA[index1][2]])
+                            break
+                        if operationsA[index1][0][0] == "o" and len(operationsA[index1][3])>1:
+                            inputSpecifiedArray[operationsA[index1][2]] = simulationInput.or_gate(operationsA[index1][3][0],operationsA[index1][3][1])
+                            operationsA[index1][4].append(inputSpecifiedArray[operationsA[index1][2]])
+                            break
+
 class prepareDot:
     def __init__(self,fDot):
         self.fDot = fDot
@@ -168,6 +275,24 @@ class prepareDot:
                     item = item.replace(")","")
                 self.fDot.write(f' "{item}" ')
         self.fDot.write('}\n')
+    def setup2(self,rankDict): #function to prepare dot file
+        #fDot.write('splines="ortho"\n')
+        for key in rankDict:
+            if key ==1:
+                self.fDot.write('subgraph inputs{ rank="same"')
+                for item in rankDict[key]:
+                    self.fDot.write(f' "{item}" ')
+                self.fDot.write('}\n')
+            elif key == max(rankDict):
+                self.fDot.write('subgraph outputs{rank="same"')
+                for item in rankDict[key]:
+                    self.fDot.write(f' "{item}" ')
+                self.fDot.write('}\n')
+            else:
+                self.fDot.write(f'subgraph Rank{key}{{rank="same"')
+                for item in rankDict[key]:
+                    self.fDot.write(f' "{item[0]}" ')
+                self.fDot.write('}\n')
     def writeNode(self,inN,shape):
         if shape == "circle":
             self.fDot.write(f'"{inN}" [shape={shape} fixedsize=true width = 0.7 height = 0.7]\n')
