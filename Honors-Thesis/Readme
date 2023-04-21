@@ -1,0 +1,23 @@
+README for Thesis.py:
+
+This script accepts several flags as input to customize its behavior. The available flags are:
+
+-mode : Choose mode: B for Boolean, m for module. This flag is required.
+
+-debug : Choose debug mode: y for yes, n for no. This flag is optional and defaults to 'n'.
+
+-spi, --specify_inputs : Specify inputs (y/n). This flag is optional and defaults to 'n'.
+
+-f, --file_path : Specify the path to the Verilog file. This flag is required.
+
+-lib : Specify the library file path. This flag is required only if mode is m.
+
+-abs, -a : Choose the abstraction level: h for high, l for low. This flag is required only if mode is m.
+
+To use this script, run it with the desired flags followed by their arguments. For example:
+
+python Thesis.py -mode m -debug y -f file.v -lib lib_file.lib -abs h
+
+This will run the script in module mode with debug mode on, and will specify the path to the Verilog file as 'file.v', the path to the library file as 'lib_file.lib', and the abstraction level as high. If you do not specify a value for -debug or -spi, the default value of 'n' will be used.
+
+Note that if you specify -mode as m, you must also specify -lib and -abs.
