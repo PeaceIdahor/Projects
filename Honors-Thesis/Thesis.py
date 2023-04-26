@@ -38,7 +38,7 @@ outputN: the variable the output of the assign statement is assigned to
 
 A Good thing to do is print out, OperationsA, It shows you the operations being performed in the verilog script
 """
-def returnOutm(Array,indexMaster,outputE,outputN=""):
+def returnOut(Array,indexMaster,outputE,outputN=""):
 	if len(Array) == 1: # if Array contains only 1 item
 		for indexItem,items in enumerate(operationsA): # iterate over operationsA
 			if items[2] == Array[0]: # if the third item in the nested list items of operationsA is equal to Array[0]
@@ -76,7 +76,7 @@ def returnOutm(Array,indexMaster,outputE,outputN=""):
 				sig = 1 # initialize sig with 1
 				rightSide = Array # assign Array to rightSide'
 
-			operationin,Array2,out = returnOutm(rightSide,indexMaster,outputE,outputN) # call returnOut function with arguments rightSide, indexMaster, outputE, outputN and store the returned values in operationin, Array2, and out respectively
+			operationin,Array2,out = returnOut(rightSide,indexMaster,outputE,outputN) # call returnOut function with arguments rightSide, indexMaster, outputE, outputN and store the returned values in operationin, Array2, and out respectively
 			bufferA.append(out) # add out to bufferA list
 			if sig == 0: # if sig is 0
 				while rp >= lp: # while rp is greater than or equal to lp
@@ -97,14 +97,14 @@ def returnOutm(Array,indexMaster,outputE,outputN=""):
 						lp = Array.index(item)-1
 						rp = Array.index(item)+2
 						rightSide = Array[lp:rp]
-						operationin,Array2,out = returnOutm(rightSide,indexMaster,outputE,outputN)
+						operationin,Array2,out = returnOut(rightSide,indexMaster,outputE,outputN)
 						rp2 = rp-1
 						while (rp2) >= lp:
 							Array.pop(rp2)
 							rp2 -=1
 						Array.insert(lp,out)
 					if item== "~" and len(Array)==2:
-						operationin,Array2,out = returnOutm(Array,indexMaster,outputE,outputN)
+						operationin,Array2,out = returnOut(Array,indexMaster,outputE,outputN)
 			if out == outputE:
 				try:
 					bufferA.remove(out)
@@ -198,213 +198,6 @@ def returnOutm(Array,indexMaster,outputE,outputN=""):
 					# If it hasn't been visited before, add it to the buffer array
 					notTrack[out] = operationin
 					# Add it to the notTrack dictionary	
-			notDict.append([out,indexMaster])
-			# Append the output and its index to the notDict list
-			inputA.append(indexV)
-			# Append the index of the variable being negated to the inputA list
-			if indexV in outputA:
-				bufferA.append(indexV)
-				# If the negated variable is already in the outputA list, append it to the bufferA list
-			Array.pop(Array.index("~"))
-			# Remove the tilde character from the input array
-			operationsA.append([operationin,Arrayin,out])
-			# Append the operation, input, and output to the operationsA list
-			
-			if len(Array) >1:
-				indexf = Array.index(indexV)
-				Array.pop(indexf)
-				Array.insert(indexf,out)
-				# If there are still elements in the input array, replace the negated variable with the output variable
-				out = returnOutm(Array,indexMaster,outputE,outputN)
-				return out
-			if out == outputE:
-				outputA.append(outputN)
-				# If the output variable is the same as the expected output, append the negated variable to the outputA list
-				operationsA.append([operationin,Array,outputN])
-			else:
-				operationsA.append([operationin,Array,out])
-				# Otherwise, append the operation, input, and output to the operationsA list
-			return operationin,Array,out
-
-		if "~&"	 in Array:
-			operationin = "Nand" + f"/{indexMaster}"
-			out= f"{Array[0]}" + "~&" + f"{Array[2]}"
-			inputA.append(Array[0])
-			if Array[0] in outputA:
-				bufferA.append(Array[0])
-			inputA.append(Array[2])
-			if Array[2] in outputA:
-				bufferA.append(Array[2])
-			Array.pop(Array.index("~&"))
-			bufferA.append(out)
-			if out == outputE:
-				outputA.append(outputN)
-				operationsA.append([operationin,Array,outputN])
-			else:
-				operationsA.append([operationin,Array,out])
-			return operationin,Array,out		
-		if "~|" in Array:
-			operationin = "Nor" + f"/{indexMaster}"
-			out= f"{Array[0]}" + "~|" + f"{Array[2]}"
-			inputA.append(Array[0])
-			if Array[0] in outputA:
-				bufferA.append(Array[0])
-			inputA.append(Array[2])
-			if Array[2] in outputA:
-				bufferA.append(Array[2])
-			Array.pop(Array.index("~|"))
-			bufferA.append(out)
-			if out == outputE:
-				outputA.append(outputN)
-				operationsA.append([operationin,Array,outputN])
-			else:
-				operationsA.append([operationin,Array,out])
-			return operationin,Array,out	
-		if "~^" in Array:
-			operationin = "Xnor" + f"/{indexMaster}"
-			out= f"{Array[0]}" + "~^" + f"{Array[2]}"
-			inputA.append(Array[0])
-			if Array[0] in outputA:
-				bufferA.append(Array[0])
-			inputA.append(Array[2])
-			if Array[2] in outputA:
-				bufferA.append(Array[2])
-			Array.pop(Array.index("~^"))
-			bufferA.append(out)
-			if out == outputE:
-				outputA.append(outputN)
-				operationsA.append([operationin,Array,outputN])
-			else:
-				operationsA.append([operationin,Array,out])
-			return operationin,Array,out
-def returnOut(Array,indexMaster,outputE,outputN=""):
-	if len(Array) == 1: # if Array contains only 1 item
-		for indexItem,items in enumerate(operationsA): # iterate over operationsA
-			if items[2] == Array[0]: # if the third item in the nested list items of operationsA is equal to Array[0]
-				operationsA[indexItem][2] = outputN # update the third item of items in operationsA with outputN
-				outputA.append(outputN) # add outputN to the end of outputA list
-				outputA.remove(Array[0]) # remove the first item in Array from outputA list
-
-	if "(" in Array: # if '(' is present in Array
-		openind = [] # initialize an empty list for storing the opening brackets' index
-		closeind = [] # initialize an empty list for storing the closing brackets' index
-		for index,item in enumerate(Array): # iterate over Array
-			if item =="(": # if the item is opening bracket
-				openind.append(index) # add the index of the opening bracket to openind list
-			if item ==")": # if the item is closing bracket
-				closeind.append(index) # add the index of the closing bracket to closeind list
-		i = len(openind) # initialize i with the length of openind
-		while((i - len(openind))<=i): # while the difference between i and len(openind) is less than or equal to i
-			indexMaster +=1 # increment the indexMaster by 1
-			if "(" in Array: # if '(' is present in Array
-				sig = 0 # initialize sig with 0
-				lp = openind[len(openind)-1] # get the last index of openind list
-				rp = closeind[0] # get the first index of closeind list
-				rightSide = Array[lp+1:rp] # get the items between lp+1 and rp from Array and assign it to rightSide
-			else: # if '(' is not present in Array
-				sig = 1 # initialize sig with 1
-				rightSide = Array # assign Array to rightSide
-			operationin,Array2,out = returnOut(rightSide,indexMaster,outputE,outputN) # call returnOut function with arguments rightSide, indexMaster, outputE, outputN and store the returned values in operationin, Array2, and out respectively
-			bufferA.append(out) # add out to bufferA list
-			if sig == 0: # if sig is 0
-				while rp >= lp: # while rp is greater than or equal to lp
-					Array.pop(rp) # remove the item at index rp from Array
-					rp -=1 # decrement the rp by 1
-				Array.insert(lp,out) # insert out at index lp in Array
-			openind = [] # initialize an empty list for storing the opening brackets' index
-			closeind = [] # initialize an empty list for storing the closing brackets' index
-			for index,item in enumerate(Array): # iterate over Array
-				if item =="(": # if the item is opening bracket
-					openind.append(index) # add the index of the opening bracket to openind list
-				if item ==")": # if the item is closing bracket
-					closeind.append(index) # add the index of the closing bracket to closeind list
-			if len(openind)==0 and len(Array) !=1 : # if there are no opening brackets and the length of Array is not 1
-				for item in Array: # iterate over Array
-					if item == "&" or item == "|" or item =="^": # if item is either
-						indexMaster +=1
-						lp = Array.index(item)-1
-						rp = Array.index(item)+2
-						rightSide = Array[lp:rp]
-						operationin,Array2,out = returnOut(rightSide,indexMaster,outputE,outputN)
-						rp2 = rp-1
-						while (rp2) >= lp:
-							Array.pop(rp2)
-							rp2 -=1
-						Array.insert(lp,out)
-			if out == outputE:
-				bufferA.remove(out)
-				return out
-			
-	else:
-		if "&" in Array and "~" not in Array:
-			operationin = "And" + f"/{indexMaster}" # Add the index to the operation to create a specific ID for the operation
-			out= f"{Array[0]}" + "&" + f"{Array[2]}" #the output of this and boolean function
-			inputA.append(Array[0]) #appending the inputs to the boolean operation to my inputs Array
-			if Array[0] in outputA: # is the input to the boolan operation is also an output to another boolean operation, then I add it to my buffer array, meaning it is an edge between two operation blocks
-				bufferA.append(Array[0])
-			inputA.append(Array[2])
-			if Array[2] in outputA:
-				bufferA.append(Array[2])
-			Array.pop(Array.index("&"))
-			bufferA.append(out)
-			if out == outputE: #checking to see if the output of the boolean operation, is the output sent into the function, If it is, I add it to my output array
-				outputA.append(outputN)
-				operationsA.append([operationin,Array,outputN])
-			else:
-				operationsA.append([operationin,Array,out])
-			return operationin,Array,out
-		"""
-		Basically the same idea is replicated for different boolean operations
-		"""
-		if "|" in Array and "~" not in Array:
-			operationin = "or" + f"/{indexMaster}"
-			out= f"{Array[0]}" + "|" + f"{Array[2]}"
-			inputA.append(Array[0])
-			if Array[0] in outputA:
-				bufferA.append(Array[0])
-			inputA.append(Array[2])
-			if Array[2] in outputA:
-				bufferA.append(Array[2])
-			Array.pop(Array.index("|"))
-			bufferA.append(out)
-			if out == outputE:
-				outputA.append(outputN)
-				operationsA.append([operationin,Array,outputN])
-			else:
-				operationsA.append([operationin,Array,out])
-			return operationin,Array,out
-		if "^" in Array and "~" not in Array:
-			operationin = "xor" + f"/{indexMaster}"
-			out= f"{Array[0]}" + "^" + f"{Array[2]}"
-			inputA.append(Array[0])
-			if Array[0] in outputA:
-				bufferA.append(Array[0])
-			inputA.append(Array[2])
-			if Array[2] in outputA:
-				bufferA.append(Array[2])
-			Array.pop(Array.index("^"))
-			bufferA.append(out)
-			if out == outputE:
-				outputA.append(outputN)
-				operationsA.append([operationin,Array,outputN])
-			else:
-				operationsA.append([operationin,Array,out])
-			return operationin,Array,out	
-		if "~" in Array:
-			operationin = "not" + f"/{indexMaster}" # Check if the tilde character is present in the input array
-			indexMaster += 1 # Create a string variable to represent the logical "not" operation being performed	
-			indexV = Array[Array.index("~")+1] 	# Increment indexMaster to keep track of the number of operations performed
-			Arrayin = [indexV] 		# Extract the index of the variable being negated
-			out= "~" + f"{indexV}"# Create a new list containing only the variable being negated, and create a new string variable to represent the output
-			if out in bufferA:
-				# Check if the output of the not operation is in the buffer array
-				operationin = notTrack[out]
-				# If it is, this means the operation has been visited before, so retrieve the previous index from the notTrack dictionary
-			else:
-				bufferA.append(out)
-				# If it hasn't been visited before, add it to the buffer array
-				notTrack[out] = operationin
-				# Add it to the notTrack dictionary	
 			notDict.append([out,indexMaster])
 			# Append the output and its index to the notDict list
 			inputA.append(indexV)
@@ -554,7 +347,7 @@ def returnOutB(array):
 	outputE = strip(list(expr))
 	outputN = array[2]
 	exprinput = re.findall(r'\(|\)|[~&\|]|[\w_]+',expr)
-	returnOutm(exprinput,int(operationIndex),outputE,outputN)
+	returnOut(exprinput,int(operationIndex),outputE,outputN)
 	return
 
 #---------------------------------------------------------Given a gate level verilog script-----------------------------------------------------------------------------------------------------------
