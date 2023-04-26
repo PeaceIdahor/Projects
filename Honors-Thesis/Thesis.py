@@ -21,9 +21,10 @@ lib_group.add_argument('-lib', metavar='lib', type=str, required=False, help='Sp
 lib_group.add_argument('-abs', '-a', choices=['h', 'l'], default='l', help='h for high, l for low. Required if mode is m')
 # set the required attribute of the argument group based on the mode flag
 if parser.parse_args().mode == 'm':
-    lib_group.required = True
+	lib_group.required = True
 else:
-    lib_group.required = False
+	lib_group.required = False
+
 
 args = parser.parse_args()
 operationsA = []
@@ -37,6 +38,245 @@ outputN: the variable the output of the assign statement is assigned to
 
 A Good thing to do is print out, OperationsA, It shows you the operations being performed in the verilog script
 """
+def returnOutm(Array,indexMaster,outputE,outputN=""):
+	if len(Array) == 1: # if Array contains only 1 item
+		for indexItem,items in enumerate(operationsA): # iterate over operationsA
+			if items[2] == Array[0]: # if the third item in the nested list items of operationsA is equal to Array[0]
+				operationsA[indexItem][2] = outputN # update the third item of items in operationsA with outputN
+				outputA.append(outputN) # add outputN to the end of outputA list
+				outputA.remove(Array[0]) # remove the first item in Array from outputA list
+
+	if "(" in Array: # if '(' is present in Array
+		openind = [] # initialize an empty list for storing the opening brackets' index
+		closeind = [] # initialize an empty list for storing the closing brackets' index
+		for index,item in enumerate(Array): # iterate over Array
+			if item =="(": # if the item is opening bracket
+				openind.append(index) # add the index of the opening bracket to openind list
+			if item ==")": # if the item is closing bracket
+				closeind.append(index) # add the index of the closing bracket to closeind list
+		i = len(openind) # initialize i with the length of openind
+		while((i - len(openind))<=i): # while the difference between i and len(openind) is less than or equal to i
+			indexMaster +=1 # increment the indexMaster by 1
+			if "(" in Array: # if '(' is present in Array
+				sig = 0 # initialize sig with 0
+				sig1=0
+				for i in range(len(openind)-1):
+					if i+1 !=None:
+						if openind[i]+1 == openind[i+1]:
+							sig1=1
+				if sig1==1:
+					lp = openind[len(openind)-1]
+					rp = closeind[0]
+					rightSide = Array[lp+1:rp]
+				else:
+					lp = openind[len(openind)-1] # get the last index of openind list
+					rp = closeind[len(closeind)-1] # get the first index of closeind list
+					rightSide = Array[lp+1:rp] # get the items between lp+1 and rp from Array and assign it to rightSide
+			else: # if '(' is not present in Array
+				sig = 1 # initialize sig with 1
+				rightSide = Array # assign Array to rightSide'
+
+			operationin,Array2,out = returnOutm(rightSide,indexMaster,outputE,outputN) # call returnOut function with arguments rightSide, indexMaster, outputE, outputN and store the returned values in operationin, Array2, and out respectively
+			bufferA.append(out) # add out to bufferA list
+			if sig == 0: # if sig is 0
+				while rp >= lp: # while rp is greater than or equal to lp
+					Array.pop(rp) # remove the item at index rp from Array
+					rp -=1 # decrement the rp by 1
+				Array.insert(lp,out) # insert out at index lp in Array
+			openind = [] # initialize an empty list for storing the opening brackets' index
+			closeind = [] # initialize an empty list for storing the closing brackets' index
+			for index,item in enumerate(Array): # iterate over Array
+				if item =="(": # if the item is opening bracket
+					openind.append(index) # add the index of the opening bracket to openind list
+				if item ==")": # if the item is closing bracket
+					closeind.append(index) # add the index of the closing bracket to closeind list
+			if len(openind)==0 and len(Array) !=1 : # if there are no opening brackets and the length of Array is not 1
+				for item in Array: # iterate over Array
+					if item == "&" or item == "|" or item =="^": # if item is either
+						indexMaster +=1
+						lp = Array.index(item)-1
+						rp = Array.index(item)+2
+						rightSide = Array[lp:rp]
+						operationin,Array2,out = returnOutm(rightSide,indexMaster,outputE,outputN)
+						rp2 = rp-1
+						while (rp2) >= lp:
+							Array.pop(rp2)
+							rp2 -=1
+						Array.insert(lp,out)
+					if item== "~" and len(Array)==2:
+						operationin,Array2,out = returnOutm(Array,indexMaster,outputE,outputN)
+			if out == outputE:
+				try:
+					bufferA.remove(out)
+				except ValueError:
+					bufferA.remove(out+ "n")
+				return out
+			
+	else:
+		if "&" in Array and "~" not in Array:
+			operationin = "And" + f"/{indexMaster}" # Add the index to the operation to create a specific ID for the operation
+			out= f"{Array[0]}" + "&" + f"{Array[2]}" #the output of this and boolean function
+			inputA.append(Array[0]) #appending the inputs to the boolean operation to my inputs Array
+			if Array[0] in outputA: # is the input to the boolan operation is also an output to another boolean operation, then I add it to my buffer array, meaning it is an edge between two operation blocks
+				bufferA.append(Array[0])
+			inputA.append(Array[2])
+			if Array[2] in outputA:
+				bufferA.append(Array[2])
+			Array.pop(Array.index("&"))
+			bufferA.append(out)
+			if out == outputE: #checking to see if the output of the boolean operation, is the output sent into the function, If it is, I add it to my output array
+				outputA.append(outputN)
+				operationsA.append([operationin,Array,outputN])
+			else:
+				operationsA.append([operationin,Array,out])
+			return operationin,Array,out
+		"""
+		Basically the same idea is replicated for different boolean operations
+		"""
+		if "|" in Array and "~" not in Array:
+			operationin = "or" + f"/{indexMaster}"
+			out= f"{Array[0]}" + "|" + f"{Array[2]}"
+			inputA.append(Array[0])
+			if Array[0] in outputA:
+				bufferA.append(Array[0])
+			inputA.append(Array[2])
+			if Array[2] in outputA:
+				bufferA.append(Array[2])
+			Array.pop(Array.index("|"))
+			bufferA.append(out)
+			if out == outputE:
+				outputA.append(outputN)
+				operationsA.append([operationin,Array,outputN])
+			else:
+				operationsA.append([operationin,Array,out])
+			return operationin,Array,out
+		if "^" in Array and "~" not in Array:
+			operationin = "xor" + f"/{indexMaster}"
+			out= f"{Array[0]}" + "^" + f"{Array[2]}"
+			inputA.append(Array[0])
+			if Array[0] in outputA:
+				bufferA.append(Array[0])
+			inputA.append(Array[2])
+			if Array[2] in outputA:
+				bufferA.append(Array[2])
+			Array.pop(Array.index("^"))
+			bufferA.append(out)
+			if out == outputE:
+				outputA.append(outputN)
+				operationsA.append([operationin,Array,outputN])
+			else:
+				operationsA.append([operationin,Array,out])
+			return operationin,Array,out	
+		if "~" in Array:
+			if len(Array) > 2 and ("&" not in Array and "|" not in Array and "^" not in Array):
+				op = 2
+				left_side = Array[op- 1]
+				right_side = Array[op + 1]
+				Array = [Array[0], left_side+Array[op]+right_side]
+			operationin = "not" + f"/{indexMaster}" # Check if the tilde character is present in the input array
+			indexMaster += 1 # Create a string variable to represent the logical "not" operation being performed	
+			indexV = Array[Array.index("~")+1] 	# Increment indexMaster to keep track of the number of operations performed
+			Arrayin = [indexV] 		# Extract the index of the variable being negated
+			out= "~" + f"{indexV}"# Create a new list containing only the variable being negated, and create a new string variable to represent the output
+			if out in bufferA and out not in notTrack:
+				if out+"n" in bufferA:
+					# Check if the output of the not operation is in the buffer array
+					operationin = notTrack[out]
+					# If it is, this means the operation has been visited before, so retrieve the previous index from the notTrack dictionary
+				else:
+					bufferA.append(out + "n")
+					# If it hasn't been visited before, add it to the buffer array
+					notTrack[out +"n"] = operationin
+					# Add it to the notTrack dictionary	
+			else:
+				if out in bufferA:
+					# Check if the output of the not operation is in the buffer array
+					operationin = notTrack[out]
+					# If it is, this means the operation has been visited before, so retrieve the previous index from the notTrack dictionary
+				else:
+					bufferA.append(out)
+					# If it hasn't been visited before, add it to the buffer array
+					notTrack[out] = operationin
+					# Add it to the notTrack dictionary	
+			notDict.append([out,indexMaster])
+			# Append the output and its index to the notDict list
+			inputA.append(indexV)
+			# Append the index of the variable being negated to the inputA list
+			if indexV in outputA:
+				bufferA.append(indexV)
+				# If the negated variable is already in the outputA list, append it to the bufferA list
+			Array.pop(Array.index("~"))
+			# Remove the tilde character from the input array
+			operationsA.append([operationin,Arrayin,out])
+			# Append the operation, input, and output to the operationsA list
+			
+			if len(Array) >1:
+				indexf = Array.index(indexV)
+				Array.pop(indexf)
+				Array.insert(indexf,out)
+				# If there are still elements in the input array, replace the negated variable with the output variable
+				out = returnOutm(Array,indexMaster,outputE,outputN)
+				return out
+			if out == outputE:
+				outputA.append(outputN)
+				# If the output variable is the same as the expected output, append the negated variable to the outputA list
+				operationsA.append([operationin,Array,outputN])
+			else:
+				operationsA.append([operationin,Array,out])
+				# Otherwise, append the operation, input, and output to the operationsA list
+			return operationin,Array,out
+
+		if "~&"	 in Array:
+			operationin = "Nand" + f"/{indexMaster}"
+			out= f"{Array[0]}" + "~&" + f"{Array[2]}"
+			inputA.append(Array[0])
+			if Array[0] in outputA:
+				bufferA.append(Array[0])
+			inputA.append(Array[2])
+			if Array[2] in outputA:
+				bufferA.append(Array[2])
+			Array.pop(Array.index("~&"))
+			bufferA.append(out)
+			if out == outputE:
+				outputA.append(outputN)
+				operationsA.append([operationin,Array,outputN])
+			else:
+				operationsA.append([operationin,Array,out])
+			return operationin,Array,out		
+		if "~|" in Array:
+			operationin = "Nor" + f"/{indexMaster}"
+			out= f"{Array[0]}" + "~|" + f"{Array[2]}"
+			inputA.append(Array[0])
+			if Array[0] in outputA:
+				bufferA.append(Array[0])
+			inputA.append(Array[2])
+			if Array[2] in outputA:
+				bufferA.append(Array[2])
+			Array.pop(Array.index("~|"))
+			bufferA.append(out)
+			if out == outputE:
+				outputA.append(outputN)
+				operationsA.append([operationin,Array,outputN])
+			else:
+				operationsA.append([operationin,Array,out])
+			return operationin,Array,out	
+		if "~^" in Array:
+			operationin = "Xnor" + f"/{indexMaster}"
+			out= f"{Array[0]}" + "~^" + f"{Array[2]}"
+			inputA.append(Array[0])
+			if Array[0] in outputA:
+				bufferA.append(Array[0])
+			inputA.append(Array[2])
+			if Array[2] in outputA:
+				bufferA.append(Array[2])
+			Array.pop(Array.index("~^"))
+			bufferA.append(out)
+			if out == outputE:
+				outputA.append(outputN)
+				operationsA.append([operationin,Array,outputN])
+			else:
+				operationsA.append([operationin,Array,out])
+			return operationin,Array,out
 def returnOut(Array,indexMaster,outputE,outputN=""):
 	if len(Array) == 1: # if Array contains only 1 item
 		for indexItem,items in enumerate(operationsA): # iterate over operationsA
@@ -265,7 +505,10 @@ This is when the input file is a gate level verilog script but I want to flatten
 For each array it translate the array into the boolean representation and calls the return out function.
 I reccomend printing out the clauses array for more clarity. 
 """
+exprarr = []
+import re
 def returnOutB(array):
+	operations = ["&","|","^"]
 	operation = array[0].split('/')[0]
 	operationIndex = array[0].split('/')[1]
 	for key in libDict:
@@ -276,21 +519,44 @@ def returnOutB(array):
 			for i in range(len(expr)-1):
 				if expr[i] == "|" or expr[i] =="&" or expr[i] == "^" :
 					if (expr[i-2] !="(" or expr[i+2] != ")") and 2+i != len(expr)-1:
-						exprlist = re.findall(r'\(|\)|[~&\|]|[\w_]+',expr)
-						exprlist.insert(i-1,"(")
-						exprlist.insert(i+3,")")
-						expr = ''.join(exprlist)
+						exprlist = re.findall(r'\(|\)|[~&\|]|[\w_]+|~\w+', expr)
+						for j in range(len(exprlist)-1):
+							if exprlist[j] == "~":
+								exprlist[j] = "~" + exprlist[j+1]
+								exprlist = exprlist[:j+1] + exprlist[j+2:]
+								if "~" not in exprlist:
+									break
+						exprlist2 = []
+						for i in range(len(exprlist)-1):
+							if exprlist[i] in operations :
+								if i-2 >= 0 and i+2 <len(exprlist) and exprlist[i-2] in operations and exprlist[i+2] in operations:
+									exprlist2.append(exprlist[i])
+									continue
+								elif exprlist[i-2] in operations and (i+2 < len(exprlist)) and exprlist[i+2] not in operations:
+									exprlist2.insert(0,exprlist[0])
+									exprlist2.append(exprlist[i])
+									exprlist2.append(exprlist[i+1])
+									exprlist2.append(")")
+								else:
+									exprlist2.append("(")
+									exprlist2.append(exprlist[i-1])
+									exprlist2.append(exprlist[i])
+									exprlist2.append(exprlist[i+1])
+									exprlist2.append(")")
+						expr = ''.join(exprlist2)
+						break
 			for item in array[1]:
 				for key in varDict:
 					if key.split("/")[1] == operationIndex:
 						if varDict[key] == item:
-							key = key.split("/")[0]
-							expr = expr.replace(key[1:],item)
+							key_prefix = key.split("/")[0][1:]
+							expr = re.sub(r'\b{}\b'.format(key_prefix), item, expr)
 	outputE = strip(list(expr))
 	outputN = array[2]
 	exprinput = re.findall(r'\(|\)|[~&\|]|[\w_]+',expr)
-	returnOut(exprinput,int(operationIndex),outputE,outputN)
+	returnOutm(exprinput,int(operationIndex),outputE,outputN)
 	return
+
 #---------------------------------------------------------Given a gate level verilog script-----------------------------------------------------------------------------------------------------------
 if args.mode == 'm':
 	lib = args.lib
@@ -355,7 +621,6 @@ if args.mode == 'm':
 				outputA.append(line[len(line)-1]) # collects the output of the gate in outputA
 				name = line[0]+f'/{index}'
 				clauses.append([name,line[2:-1],line[len(line)-1]]) # collects the clause in clauses, which is the name of the gate, its inputs, and its output
-
 	if args.abs == "h": # if yes, set Abst flag to 1 and print message
 		Abst = 1
 	elif args.abs == "l": # if no, set Abst flag to 0 and print message
@@ -420,12 +685,15 @@ if args.mode == 'm':
 		# Writing visuals to the dotfile and closing it
 		verilogFuncs.writeVisuals(dotFile,clauses,bufferA,labelon,inputon)
 		dotfile.endFile()
-
 	else:
 		# Iterate over clauses and return the outputs of the clauses in the bufferA list
 		for array in clauses:
 			returnOutB(array)
-
+		for array in operationsA:
+			for array2 in operationsA:
+				if array[0] == array2[0] and array[1]==array2[1] and array[2] !=array2[2]:
+					if array[2] not in outputA:
+						operationsA.remove(array)
 		# Setup the dotfile with inputA, bufferA, and outputA lists
 		dotfile.setup(inputA, bufferA, outputA)
 
@@ -460,7 +728,6 @@ if args.mode == 'm':
 
 		# Close the dotfile
 		dotfile.endFile()
-
 #---------------------------------------------------------------------------------------------------Given a boolean level verilog script----------------------------------------------------------------------------------------------------
 elif args.mode == 'b':
 	
