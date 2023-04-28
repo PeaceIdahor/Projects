@@ -82,6 +82,8 @@ class verilogFuncs:
                 for word in line:
                     if word == ' ' or word == '\n' or word == '	' or word==',': #creating a line of demarkation to seperate characters in sequence
                         command = ''.join(wordArr) #joining those characters into a str word that represents some kind of command
+                        if command == '':
+                            continue
                         check = 0
                         if "~" in command:
                             check = 1
@@ -129,11 +131,11 @@ class verilogFuncs:
                                 wordArrsave.remove(command)
                                 index -=1
                             command = command.replace(')',"")
-                            wordArrsave.append(command)
-                            index +=1
                             wordArrsave.append(')')
                             index +=1
-                        if ';' in command:
+                            wordArrsave.append(command)
+                            index +=1
+                        if ';' in command and len(command)>1:
                             check =1
                             if command in wordArrsave:
                                 wordArrsave.remove(command)
@@ -146,7 +148,8 @@ class verilogFuncs:
                             index+=1
                             wordArrsave.append(';')
                             index+=1
-
+                        if  ";" in command and len(command)== 1:
+                            wordArrsave.append(command)
                         if check == 0:
                             wordArrsave.append(command) #appending that command to my list of words that I will refer back to later
                             index +=1
@@ -158,6 +161,9 @@ class verilogFuncs:
         #-----------------------Preparing the command array to leave only relevant information from the verilog file ----------------------------------------
         while '' in wordArrsave: #removing empty strings from the list
             wordArrsave.remove('')
+        for index, item in enumerate(wordArrsave):
+            if item == ";" and wordArrsave[index+1] == ";":
+                wordArrsave.pop(index+1)
         return wordArrsave
     def processVisual(bufferA,operationsA,inputA):
         for index,item in enumerate(bufferA):
