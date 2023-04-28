@@ -300,6 +300,21 @@ I reccomend printing out the clauses array for more clarity.
 """
 exprarr = []
 import re
+def parse_expression(expr):
+    result = []
+    current_str = ''
+    for char in expr:
+        if char in ['(', ')', '&', '|', '~']:
+            if current_str:
+                result.append(current_str)
+                current_str = ''
+            result.append(char)
+        else:
+            current_str += char
+    if current_str:
+        result.append(current_str)
+    return result
+
 def returnOutB(array):
 	operations = ["&","|","^"]
 	operation = array[0].split('/')[0]
@@ -320,12 +335,13 @@ def returnOutB(array):
 								if "~" not in exprlist:
 									break
 						exprlist2 = []
+						count = sum(any(op in s for op in operations) for s in exprlist)
 						for i in range(len(exprlist)-1):
 							if exprlist[i] in operations :
 								if i-2 >= 0 and i+2 <len(exprlist) and exprlist[i-2] in operations and exprlist[i+2] in operations:
 									exprlist2.append(exprlist[i])
 									continue
-								elif exprlist[i-2] in operations and (i+2 < len(exprlist)) and exprlist[i+2] not in operations:
+								elif exprlist[i-2] in operations and (i+2 < len(exprlist)) and exprlist[i+2] not in operations and count%2 ==0:
 									exprlist2.insert(0,exprlist[0])
 									exprlist2.append(exprlist[i])
 									exprlist2.append(exprlist[i+1])
@@ -338,15 +354,18 @@ def returnOutB(array):
 									exprlist2.append(")")
 						expr = ''.join(exprlist2)
 						break
+
 			for item in array[1]:
 				for key in varDict:
 					if key.split("/")[1] == operationIndex:
 						if varDict[key] == item:
 							key_prefix = key.split("/")[0][1:]
+							item = item.replace('\\', r'\\') # escape the item string
 							expr = re.sub(r'\b{}\b'.format(key_prefix), item, expr)
 	outputE = strip(list(expr))
 	outputN = array[2]
-	exprinput = re.findall(r'\(|\)|[~&\|]|[\w_]+',expr)
+	exprinput = parse_expression(expr)
+	print(expr)
 	returnOut(exprinput,int(operationIndex),outputE,outputN)
 	return
 
@@ -546,9 +565,6 @@ elif args.mode == 'b':
 	You can comment lines of verilog, but you cannot add commented lines that are not verilog
 	"""
 	for index,word in enumerate(wordArrsave):
-		if word =="//": #checking to see if part of the code was commented 
-			while wordArrsave[index] !=";":
-				wordArrsave.pop(index)
 		rightSide=[]
 		if word == "assign": # the only part I care about are the assign statements
 			indexMaster = index #get the index of the assign statement
